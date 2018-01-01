@@ -4,6 +4,7 @@ import random
 from DataInput import DataInput
 from mentee import Mentee
 from VGG16 import VGG16
+from mentor import Mentor
 #from embed import Embed
 import os
 import pdb
@@ -13,17 +14,21 @@ from tensorflow.contrib.learn.python.learn.datasets.mnist import read_data_sets
 import argparse
 dataset_path = "./"
 
-NUM_CHANNELS = 3
 NUM_ITERATIONS = 100000
 SUMMARY_LOG_DIR="./summary-log"
 LEARNING_RATE_DECAY_FACTOR = 0.9809
 NUM_EPOCHS_PER_DECAY = 1.0
 validation_accuracy_list = []
 test_accuracy_list = []
+
+def read_mnist_data():
+    mnist = read_data_sets(FLAGS.mnist_data_dir)
+    return mnist      
+
 def placeholder_inputs(batch_size):
 	images_placeholder = tf.placeholder(tf.float32, 
 								shape=(FLAGS.batch_size, FLAGS.image_height, 
-									   FLAGS.image_width, NUM_CHANNELS))
+									   FLAGS.image_width, FLAGS.num_channels))
 	labels_placeholder = tf.placeholder(tf.int32,
 								shape=(FLAGS.batch_size))
 
@@ -62,14 +67,22 @@ def do_eval(sess,
 			dataset,mode, phase_train):
 
 	true_count =0
-	steps_per_epoch = dataset.num_examples //FLAGS.batch_size 
-	num_examples = steps_per_epoch * FLAGS.batch_size
+        if mode == 'Test':
+	    steps_per_epoch = FLAGS.num_testing_examples //FLAGS.batch_size 
+	    num_examples = steps_per_epoch * FLAGS.batch_size
+        if mode == 'Validation':
+	    steps_per_epoch = FLAGS.num_validation_examples //FLAGS.batch_size 
+	    num_examples = steps_per_epoch * FLAGS.batch_size
 
 	for step in xrange(steps_per_epoch):
-		feed_dict = fill_feed_dict(dataset, images_placeholder,
+            if FLAGS.dataset == 'mnist':
+                feed_dict = {images_placeholder: np.reshape(dataset.test.next_batch(FLAGS.batch_size)[0], [FLAGS.batch_size, FLAGS.image_width, FLAGS.image_height, NUM_CHANNELS]), labels_placeholder: dataset.test.next_batch(FLAGS.batch_size)[1]}
+            else:
+	        feed_dict = fill_feed_dict(dataset, images_placeholder,
 			    				labels_placeholder,sess, mode,phase_train)
-		count = sess.run(eval_correct, feed_dict=feed_dict)
-		true_count = true_count + count
+
+	    count = sess.run(eval_correct, feed_dict=feed_dict)
+	    true_count = true_count + count
 
 	precision = float(true_count) / num_examples
 	print ('  Num examples: %d, Num correct: %d, Precision @ 1: %0.04f' %
@@ -272,12 +285,14 @@ def train_op_for_single_optimizer(lr, loss, l1, l2, l3, l4, l5, l6):
 def main(_):
 
 	with tf.Graph().as_default():
-                tf.set_random_seed(1)
+               	if FLAGS.dataset == 'mnist':
+                    mnist = read_mnist_data()
+                #tf.set_random_seed(1)
 
-		data_input_train = DataInput(dataset_path, FLAGS.train_dataset, FLAGS.batch_size, FLAGS.num_training_examples, FLAGS.image_width, FLAGS.image_height)
+		data_input_train = DataInput(dataset_path, FLAGS.train_dataset, FLAGS.batch_size, FLAGS.num_training_examples, FLAGS.image_width, FLAGS.image_height, FLAGS.num_channels)
 
-		data_input_test = DataInput(dataset_path, FLAGS.test_dataset,FLAGS.batch_size, FLAGS.num_testing_examples, FLAGS.image_width, FLAGS.image_height )
-		data_input_validation = DataInput(dataset_path, FLAGS.validation_dataset,FLAGS.batch_size, FLAGS.num_validation_examples, FLAGS.image_width, FLAGS.image_height)
+		data_input_test = DataInput(dataset_path, FLAGS.test_dataset,FLAGS.batch_size, FLAGS.num_testing_examples, FLAGS.image_width, FLAGS.image_height, FLAGS.num_channels)
+		data_input_validation = DataInput(dataset_path, FLAGS.validation_dataset,FLAGS.batch_size, FLAGS.num_validation_examples, FLAGS.image_width, FLAGS.image_height, FLAGS.num_channels)
 		images_placeholder, labels_placeholder = placeholder_inputs(FLAGS.batch_size)
 		sess = tf.Session()
                 
@@ -291,25 +306,28 @@ def main(_):
                 if FLAGS.teacher:
                     if FLAGS.dataset == 'cifar10':
                         print("Teacher")
-		        mentor = Mentor()
+		        mentor = VGG16()
                     if FLAGS.dataset == 'caltech101':
                         mentor = VGG16()
                     num_batches_per_epoch = FLAGS.NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN / FLAGS.batch_size
                     decay_steps = int(num_batches_per_epoch * NUM_EPOCHS_PER_DECAY)
                     mentor.build(images_placeholder, FLAGS.num_classes, FLAGS.temp_softmax, phase_train)
                     loss = mentor.loss(labels_placeholder)
-                    variables_to_restore =[]
-                    variables_to_restore = get_variables_to_restore(variables_to_restore)
                     lr = tf.train.exponential_decay(FLAGS.learning_rate,global_step, decay_steps,LEARNING_RATE_DECAY_FACTOR,staircase=True)
-                    
-                    train_op = mentor.training(loss, FLAGS.learning_rate_pretrained,lr, global_step, variables_to_restore,mentor.get_training_vars())
+                    variables_to_restore = []
+                    variables_to_restore = get_mentor_variables_to_restore(variables_to_restore)
+                    if FLAGS.dataset == 'caltech101':
+                        train_op = mentor.training(loss, FLAGS.learning_rate_pretrained,lr, global_step, variables_to_restore,mentor.get_training_vars())
+                    if FLAGS.dataset == 'cifar10':
+                        #train_op = mentor.training(loss, lr, global_step)
+                        train_op = mentor.training(loss, FLAGS.learning_rate_pretrained,lr, global_step, variables_to_restore,mentor.get_training_vars())
                     softmax = mentor.fc3l
                     init = tf.global_variables_initializer()
                     sess.run(init)
                     saver = tf.train.Saver()
 
                 elif FLAGS.student:
-                    student = Mentee()
+                    student = Mentee(FLAGS.num_channels)
                     print("Independent student")
                     num_batches_per_epoch = FLAGS.NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN / FLAGS.batch_size
                     decay_steps = int(num_batches_per_epoch * NUM_EPOCHS_PER_DECAY)
@@ -327,7 +345,7 @@ def main(_):
 		    vgg16_mentor = VGG16(trainable = False)
                     num_batches_per_epoch = FLAGS.NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN / FLAGS.batch_size
                     decay_steps = int(num_batches_per_epoch * NUM_EPOCHS_PER_DECAY)
-                    vgg16_mentee = Mentee()
+                    vgg16_mentee = Mentee(FLAGS.num_channels)
 		    mentor_conv1_1, mentor_conv1_2, mentor_conv2_1, mentor_conv2_2, mentor_conv3_1, mentor_conv3_2, mentor_conv3_3, mentor_conv4_1, mentor_conv4_2, mentor_conv4_3,  mentor_conv5_1, mentor_conv5_2, mentor_conv5_3, logits_mentor, softmax_mentor = vgg16_mentor.build(images_placeholder, FLAGS.num_classes, FLAGS.temp_softmax, phase_train)
 
                     mentee_conv1_1, mentee_conv2_1, mentee_conv3_1, mentee_conv4_1, mentee_conv5_1, mentee_conv6_1, logits_mentee, softmax_mentee = vgg16_mentee.build(images_placeholder, FLAGS.num_classes, FLAGS.temp_softmax, phase_train)
@@ -364,6 +382,9 @@ def main(_):
 								labels_placeholder, sess, 'Train', phase_train)
                                 if FLAGS.student or FLAGS.teacher:
 				    _, loss_value = sess.run([train_op, loss], feed_dict=feed_dict)
+                                    if FLAGS.dataset == 'mnist':
+                                        batch = mnist.train.next_batch(FLAGS.batch_size)
+                                        _, loss_value = sess.run([train_op, loss], feed_dict = {images_placeholder: np.reshape(batch[0], [FLAGS.batch_size, FLAGS.image_height, FLAGS.image_width, FLAGS.num_channels]), labels_placeholder: batch[1]})
 				    if i % 10 == 0:
 					print ('Step %d: loss_value = %.2f' % (i, loss_value))
 
@@ -407,22 +428,42 @@ def main(_):
                                         print covalue12
                                         print covalue13
                                         """
-                                        print ("Validation Data Eval:")
-                                        do_eval(sess, 
-                                                eval_correct,
-                                                softmax,
-                                                images_placeholder,
-                                                labels_placeholder,
-                                                data_input_validation, 
-                                                'Validation', phase_train)
-                                        print ("Test  Data Eval:")
-                                        do_eval(sess, 
-                                                eval_correct,
-                                                softmax,
-                                                images_placeholder,
-                                                labels_placeholder,
-                                                data_input_test, 
-                                                'Test', phase_train)
+                                        if FLAGS.dataset == 'mnist':
+                                            print('validation accuracy::MNIST')
+                                            do_eval(sess, 
+                                                    eval_correct,
+                                                    softmax,
+                                                    images_placeholder,
+                                                    labels_placeholder,
+                                                    mnist, 
+                                                    'Validation', phase_train)
+
+                                            print('test accuracy::MNIST')
+                                            do_eval(sess, 
+                                                    eval_correct,
+                                                    softmax,
+                                                    images_placeholder,
+                                                    labels_placeholder,
+                                                    mnist, 
+                                                    'Test', phase_train)
+                                            
+                                        else:
+                                            print ("Validation Data Eval:")
+                                            do_eval(sess, 
+                                                    eval_correct,
+                                                    softmax,
+                                                    images_placeholder,
+                                                    labels_placeholder,
+                                                    data_input_validation, 
+                                                    'Validation', phase_train)
+                                            print ("Test  Data Eval:")
+                                            do_eval(sess, 
+                                                    eval_correct,
+                                                    softmax,
+                                                    images_placeholder,
+                                                    labels_placeholder,
+                                                    data_input_test, 
+                                                    'Test', phase_train)
                             
 			coord.request_stop()
 			coord.join(threads)
@@ -551,6 +592,24 @@ if __name__ == '__main__':
             type = bool,
             help = 'multiple_optimizers',
             default = False
+        )
+        parser.add_argument(
+            '--dataset',
+            type = str,
+            help = 'name of the dataset',
+            default = 'cifar10'
+        )
+        parser.add_argument(
+            '--mnist_data_dir',
+            type = str,
+            help = 'name of the dataset',
+            default = './mnist_data'
+        )
+        parser.add_argument(
+            '--num_channels',
+            type = int,
+            help = 'number of channels in the initial layer if it is RGB it will 3 , if it is gray scale it will be 1',
+            default = '3'
         )
 
         FLAGS, unparsed = parser.parse_known_args()
