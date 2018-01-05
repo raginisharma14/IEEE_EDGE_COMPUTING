@@ -1,9 +1,8 @@
-# VGG16-TF
-TensorFlow implementation of the training version of VGG16
+Command to execute new algorithm of Knowledge Transfer:
 
-python main.py --student True --train_dataset train_map.txt --test_dataset test_map.txt --validation_dataset validation_map.txt --num_training_examples 45000 --num_testing_examples 10000 --num_validation_examples 5000 --NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN 45000 --num_classes 10 --image_width 28 --image_height 28  --batch_size 128 --learning_rate 0.0000005 --dataset mnist
+python main.py --student True --train_dataset caltech101-train.txt --test_dataset caltech101-test --validation_dataset caltech101-validation.txt --num_training_examples 45000 --num_testing_examples 10000 --num_validation_examples 5000 --NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN 45000 --num_classes 10 --image_width 224 --image_height 224  --batch_size 45 --learning_rate 0.005 --dataset caltech101
 
-We are also gonna add Generalized version of Trainable VGG19 in the future.
+
 
 vgg16.npy can be downloaded from here:ftp://mi.eng.cam.ac.uk/pub/mttt2/models/vgg16.npy
 vgg16.npz can be downloaded from here: https://www.cs.toronto.edu/~frossard/vgg16/vgg16_weights.npz
