@@ -12,14 +12,14 @@ from tensorflow.python import debug as tf_debug
 from tensorflow.contrib.learn.python.learn.datasets.mnist import read_data_sets
 import argparse
 dataset_path = "./"
-
+tf.reset_default_graph()
 NUM_ITERATIONS = 100000
 SUMMARY_LOG_DIR="./summary-log"
 LEARNING_RATE_DECAY_FACTOR = 0.9809
 NUM_EPOCHS_PER_DECAY = 1.0
 validation_accuracy_list = []
 test_accuracy_list = []
-seed = 1
+seed = 1234
 def read_mnist_data():
     mnist = read_data_sets(FLAGS.mnist_data_dir)
     return mnist      
@@ -79,8 +79,7 @@ def do_eval(sess,
             else:
 	        feed_dict = fill_feed_dict(dataset, images_placeholder,
 			    				labels_placeholder,sess, mode,phase_train)
-
-	    count = sess.run(eval_correct, feed_dict=feed_dict)
+            count = sess.run(eval_correct, feed_dict=feed_dict)
 	    true_count = true_count + count
 
 	precision = float(true_count) / num_examples
@@ -287,16 +286,17 @@ def train_op_for_single_optimizer(lr, loss, l1, l2, l3, l4, l5, l6):
 def main(_):
 
 	with tf.Graph().as_default():
+                config = tf.ConfigProto(gpu_options = tf.GPUOptions(allow_growth = True))
                	if FLAGS.dataset == 'mnist':
                     mnist = read_mnist_data()
                 tf.set_random_seed(seed)
 
-		data_input_train = DataInput(dataset_path, FLAGS.train_dataset, FLAGS.batch_size, FLAGS.num_training_examples, FLAGS.image_width, FLAGS.image_height, FLAGS.num_channels)
+		data_input_train = DataInput(dataset_path, FLAGS.train_dataset, FLAGS.batch_size, FLAGS.num_training_examples, FLAGS.image_width, FLAGS.image_height, FLAGS.num_channels, seed)
 
-		data_input_test = DataInput(dataset_path, FLAGS.test_dataset,FLAGS.batch_size, FLAGS.num_testing_examples, FLAGS.image_width, FLAGS.image_height, FLAGS.num_channels)
-		data_input_validation = DataInput(dataset_path, FLAGS.validation_dataset,FLAGS.batch_size, FLAGS.num_validation_examples, FLAGS.image_width, FLAGS.image_height, FLAGS.num_channels)
+		data_input_test = DataInput(dataset_path, FLAGS.test_dataset,FLAGS.batch_size, FLAGS.num_testing_examples, FLAGS.image_width, FLAGS.image_height, FLAGS.num_channels, seed)
+		data_input_validation = DataInput(dataset_path, FLAGS.validation_dataset,FLAGS.batch_size, FLAGS.num_validation_examples, FLAGS.image_width, FLAGS.image_height, FLAGS.num_channels, seed)
 		images_placeholder, labels_placeholder = placeholder_inputs(FLAGS.batch_size)
-		sess = tf.Session()
+		sess = tf.Session(config = config)
                 
 		summary_writer = tf.summary.FileWriter(SUMMARY_LOG_DIR, sess.graph)
 		coord = tf.train.Coordinator()
@@ -541,17 +541,17 @@ if __name__ == '__main__':
         parser.add_argument(
             '--train_dataset',
             type = str,
-            default = "dataset-train.txt"                                   
+            default = "caltech101-train.txt"                                   
         )
         parser.add_argument(
             '--test_dataset',
             type = str,
-            default = "dataset-test.txt"                                   
+            default = "caltech101-test.txt"                                   
         )
         parser.add_argument(
             '--validation_dataset',
             type = str,
-            default = "dataset-validation.txt"                                   
+            default = "caltech101-validation.txt"                                   
         )
         parser.add_argument(
             '--temp_softmax',
