@@ -50,6 +50,7 @@ class Mentee(object):
  #           self.conv3 = tf.contrib.layers.batch_norm(self.conv3, decay = 0.9, center = True, scale = False, updates_collections = None, is_training= train_mode)            
 
             self.conv3 = tf.nn.relu(self.conv3)
+
 	with tf.name_scope('mentee_conv4_1') as scope:
             depthwise_filter = tf.Variable(tf.truncated_normal([3, 3, int(alpha*128), 1], dtype= tf.float32, stddev = 1e-2, seed=seed), trainable = trainable, name = 'mentee_weights')
             pointwise_filter = tf.Variable(tf.truncated_normal([1, 1, int(alpha*128), int(128 *alpha)], dtype= tf.float32, stddev = 1e-2, seed=seed), trainable = trainable, name = 'mentee_weights')
@@ -57,6 +58,7 @@ class Mentee(object):
   #          self.conv4 = tf.contrib.layers.batch_norm(self.conv4, decay = 0.9, center = True, scale = False, updates_collections = None, is_training= train_mode)            
 
             self.conv4 = tf.nn.relu(self.conv4)
+
 	with tf.name_scope('mentee_conv5_1') as scope:
             depthwise_filter = tf.Variable(tf.truncated_normal([3, 3, int(alpha*128), 1], dtype= tf.float32, stddev = 1e-2, seed=seed),trainable = trainable, name = 'mentee_weights')
             pointwise_filter = tf.Variable(tf.truncated_normal([1, 1, int(alpha*128), int(256* alpha)], dtype= tf.float32, stddev = 1e-2, seed=seed), trainable = trainable, name = 'mentee_weights')
@@ -64,6 +66,7 @@ class Mentee(object):
    #         self.conv5 = tf.contrib.layers.batch_norm(self.conv5, decay = 0.9, center = True, scale = False, updates_collections = None, is_training= train_mode)            
 
             self.conv5 = tf.nn.relu(self.conv5)
+
 	with tf.name_scope('mentee_conv6_1') as scope:
             depthwise_filter = tf.Variable(tf.truncated_normal([3, 3, int(alpha*256), 1], dtype= tf.float32, stddev = 1e-2, seed=seed), trainable = trainable, name = 'mentee_weights')
             pointwise_filter = tf.Variable(tf.truncated_normal([1, 1, int(alpha*256), int(256* alpha)], dtype= tf.float32, stddev = 1e-2, seed=seed), trainable = trainable, name = 'mentee_weights')
@@ -76,56 +79,62 @@ class Mentee(object):
             self.conv7 = tf.nn.separable_conv2d(self.conv6, depthwise_filter, pointwise_filter, [1, 2, 2,1], "SAME")
      #       self.conv7 = tf.contrib.layers.batch_norm(self.conv7, decay = 0.9, center = True, scale = False, updates_collections = None, is_training= train_mode)            
             self.conv7 = tf.nn.relu(self.conv7)
+
 	with tf.name_scope('mentee_conv8_1') as scope:
             depthwise_filter = tf.Variable(tf.truncated_normal([3, 3, int(512* alpha), 1], dtype= tf.float32, stddev = 1e-2, seed=seed), trainable = trainable,name = 'mentee_weights')
             pointwise_filter = tf.Variable(tf.truncated_normal([1, 1, int(alpha*512), int(alpha*512)], dtype= tf.float32, stddev = 1e-2, seed=seed), trainable = trainable, name = 'mentee_weights')
             self.conv8 = tf.nn.separable_conv2d(self.conv7, depthwise_filter, pointwise_filter, [1, 1, 1, 1], "SAME")
       #      self.conv8 = tf.contrib.layers.batch_norm(self.conv8, decay = 0.9, center = True, scale = False, updates_collections = None, is_training= train_mode)            
             self.conv8 = tf.nn.relu(self.conv8)
+
 	with tf.name_scope('mentee_conv9_1') as scope:
             depthwise_filter = tf.Variable(tf.truncated_normal([3, 3, int(alpha*512), 1], dtype= tf.float32, stddev = 1e-2, seed=seed),trainable = trainable, name = 'mentee_weights')
             pointwise_filter = tf.Variable(tf.truncated_normal([1, 1, int(alpha*512), int(512* alpha)], dtype= tf.float32, stddev = 1e-2, seed=seed), trainable = trainable, name = 'mentee_weights')
             self.conv9 = tf.nn.separable_conv2d(self.conv8,depthwise_filter, pointwise_filter,  [1, 1, 1, 1], "SAME")
        #     self.conv9 = tf.contrib.layers.batch_norm(self.conv9, decay = 0.9, center = True, scale = False, updates_collections = None, is_training= train_mode)            
             self.conv9 = tf.nn.relu(self.conv9)
+
 	with tf.name_scope('mentee_conv10_1') as scope:
             depthwise_filter = tf.Variable(tf.truncated_normal([3, 3, int(512* alpha), 1], dtype= tf.float32, stddev = 1e-2, seed=seed), trainable = trainable,name = 'mentee_weights')
             pointwise_filter = tf.Variable(tf.truncated_normal([1, 1, int(alpha*512), int(512* alpha)], dtype= tf.float32, stddev = 1e-2, seed=seed),trainable = trainable, name = 'mentee_weights')
             self.conv10 = tf.nn.separable_conv2d(self.conv9, depthwise_filter, pointwise_filter,  [1, 1, 1, 1], "SAME")
         #    self.conv10 = tf.contrib.layers.batch_norm(self.conv10, decay = 0.9, center = True, scale = False, updates_collections = None, is_training= train_mode)            
             self.conv10 = tf.nn.relu(self.conv10)
+
 	with tf.name_scope('mentee_conv11_1') as scope:
             depthwise_filter = tf.Variable(tf.truncated_normal([3, 3, int(512 *alpha), 1], dtype= tf.float32, stddev = 1e-2, seed=seed),trainable = trainable, name = 'mentee_weights')
             pointwise_filter = tf.Variable(tf.truncated_normal([1, 1, int(alpha*512), int(512 *alpha)], dtype= tf.float32, stddev = 1e-2, seed=seed), trainable = trainable,name = 'mentee_weights')
             self.conv11= tf.nn.separable_conv2d(self.conv10, depthwise_filter, pointwise_filter,  [1, 1, 1, 1], "SAME")
          #   self.conv11 = tf.contrib.layers.batch_norm(self.conv11, decay = 0.9, center = True, scale = False, updates_collections = None, is_training= train_mode)            
             self.conv11 = tf.nn.relu(self.conv11)
+
 	with tf.name_scope('mentee_conv12_1') as scope:
             depthwise_filter = tf.Variable(tf.truncated_normal([3, 3, int(512*alpha), 1], dtype= tf.float32, stddev = 1e-2, seed=seed), trainable = trainable,name = 'mentee_weights')
             pointwise_filter = tf.Variable(tf.truncated_normal([1, 1, int(alpha*512), int(512*alpha)], dtype= tf.float32, stddev = 1e-2, seed=seed), trainable = trainable, name = 'mentee_weights')
             self.conv12= tf.nn.separable_conv2d(self.conv11, depthwise_filter, pointwise_filter,  [1, 1, 1, 1], "SAME")
           #  self.conv12 = tf.contrib.layers.batch_norm(self.conv12, decay = 0.9, center = True, scale = False, updates_collections = None, is_training= train_mode)            
             self.conv12 = tf.nn.relu(self.conv12)
+
 	with tf.name_scope('mentee_conv13_1') as scope:
             depthwise_filter = tf.Variable(tf.truncated_normal([3, 3, int(512 *alpha), 1], dtype= tf.float32, stddev = 1e-2, seed=seed), trainable = trainable ,name = 'mentee_weights')
             pointwise_filter = tf.Variable(tf.truncated_normal([1, 1, int(alpha*512), int(1024 *alpha)], dtype= tf.float32, stddev = 1e-2, seed=seed), trainable = trainable,name = 'mentee_weights')
             self.conv13 = tf.nn.separable_conv2d(self.conv12, depthwise_filter, pointwise_filter,  [1, 2, 2, 1], "SAME")
            # self.conv13 = tf.contrib.layers.batch_norm(self.conv13, decay = 0.9, center = True, scale = False, updates_collections = None, is_training= train_mode)            
             self.conv13 = tf.nn.relu(self.conv13)
+
 	with tf.name_scope('mentee_conv14_1') as scope:
             depthwise_filter = tf.Variable(tf.truncated_normal([3, 3, int(1024 *alpha), 1], dtype= tf.float32, stddev = 1e-2, seed=seed), trainable = trainable, name = 'mentee_weights')
             pointwise_filter = tf.Variable(tf.truncated_normal([1, 1, int(alpha*1024), int(1024 *alpha)], dtype= tf.float32, stddev = 1e-2, seed=seed), trainable = trainable, name = 'mentee_weights')
             self.conv14 = tf.nn.separable_conv2d(self.conv13, depthwise_filter, pointwise_filter,  [1, 1, 1, 1], "SAME")
             #self.conv14 = tf.contrib.layers.batch_norm(self.conv14, decay = 0.9, center = True, scale = False, updates_collections = None, is_training= train_mode)            
             self.conv14 = tf.nn.relu(self.conv14)
+
         with tf.name_scope('mentee_conv15_1') as scope:
             
             self.conv15 = tf.reduce_mean(self.conv14, [1,2])
             
             #self.conv15 = tf.layers.average_pooling2d(self.conv14, [2, 2], [1, 1])
 
-            #shape = int(np.prod(conv15.get_shape()[1:]))
-            #shape = [1, 1, int(1024 * alpha)]
             self.conv16 = tf.reshape(self.conv15,  [-1, 1, 1, int(1024*alpha)])
 
 	    kernel = tf.Variable(tf.truncated_normal([1, 1, int(1024 * alpha), num_classes], dtype = tf.float32, stddev = 1e-2, seed = seed),trainable = trainable, name = "mentee_weights")
@@ -134,13 +143,7 @@ class Mentee(object):
             #self.conv18 = tf.contrib.layers.batch_norm(self.conv18, decay = 0.9, center = True, scale = False, updates_collections = None, is_training= train_mode)            
             self.conv19 = tf.nn.softmax(self.conv18)
             self.conv20 = tf.reshape(self.conv19, [-1, num_classes])
-	   # conv = GaussianNoise(0.5)(conv)
 	
-        #model = Model(img_input, conv22)
-        """    
-	for l in model.layers:
-	    l.trainable = False
-        """
         data_dict = {}
         data_dict = self.fill_data_dict(data_dict, self.conv1, self.conv2, self.conv3, self.conv4, self.conv5, self.conv6, self.conv7, self.conv8, self.conv9, self.conv10, self.conv11, self.conv12, self.conv13, self.conv14, self.conv15, self.conv16, self.conv18, self.conv19, self.conv20)
 
@@ -152,7 +155,8 @@ class Mentee(object):
 
     def training(self, loss, lr, global_step):
         tf.summary.scalar('loss', loss)
-        optimizer = tf.train.MomentumOptimizer(lr,0.9, use_locking = True, use_nesterov = True)
+        #optimizer = tf.train.MomentumOptimizer(lr,0.9, use_locking = True, use_nesterov = True)
+        optimizer = tf.train.GradientDescentOptimizer(lr)
         train_op = optimizer.minimize(loss, global_step=global_step)
         return train_op
 
