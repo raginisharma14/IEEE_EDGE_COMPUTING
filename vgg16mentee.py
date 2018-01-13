@@ -20,15 +20,15 @@ class Mentee(object):
 		# conv1_1
 		with tf.name_scope('mentee_conv1_1') as scope:
 			kernel = tf.Variable(tf.truncated_normal([3, 3, self.num_channels, 64], dtype=tf.float32,
-													 stddev=1e-2), trainable = True, name='mentee_weights')
+													 stddev=1e-2, seed = seed), trainable = True, name='mentee_weights')
 			conv = tf.nn.conv2d(rgb, kernel, [1, 1, 1, 1], padding='SAME')
 			biases = tf.Variable(tf.constant(0.0, shape=[64], dtype=tf.float32),
 								 trainable=True, name='mentee_biases')
 			out = tf.nn.bias_add(conv, biases)
-#                        out = tf.contrib.layers.batch_norm(out,  decay=0.999,
-                                    #center=True,
-                                     #   scale=False,
-                                      #  updates_collections= None, is_training= train_mode)
+                        #out = tf.contrib.layers.batch_norm(out,  decay=0.999,
+                         #           center=True,
+                          #              scale=False,
+                           #             updates_collections= None, is_training= train_mode)
  #                       mean, var = tf.nn.moments(out, axes=[0])
                         #out = tf.nn.batch_normalization(out, mean, var)
                         #out = (out - mean) / tf.sqrt(var + tf.constant(1e-10))
@@ -43,15 +43,15 @@ class Mentee(object):
                 #conv2_1
 		with tf.name_scope('mentee_conv2_1') as scope:
 			kernel = tf.Variable(tf.truncated_normal([3, 3, 64, 128], dtype=tf.float32,
-													 stddev=1e-2), trainable = True, name='mentee_weights')
+													 stddev=1e-2, seed = seed), trainable = True, name='mentee_weights')
 			conv = tf.nn.conv2d(self.pool1, kernel, [1, 1, 1, 1], padding='SAME')
 			biases = tf.Variable(tf.constant(0.0, shape=[128], dtype=tf.float32),
 								trainable=True, name='mentee_biases')
 			out = tf.nn.bias_add(conv, biases)
-    #                   out = tf.contrib.layers.batch_norm(out,  decay=0.999,
-     #                               center=True,
-      #                                  scale=False,
-       #                                 updates_collections= None, is_training= train_mode)
+                        #out = tf.contrib.layers.batch_norm(out,  decay=0.999,
+                        #            center=True,
+                         #               scale=False,
+                          #              updates_collections= None, is_training= train_mode)
    #                     mean, var = tf.nn.moments(out, axes=[0])
                         #out = (out - mean) / tf.sqrt(var + tf.constant(1e-10))
                         #out = tf.nn.batch_normalization(out, mean, var)
@@ -65,15 +65,15 @@ class Mentee(object):
 									name='pool2')
 		with tf.name_scope('mentee_conv3_1') as scope:
 			kernel = tf.Variable(tf.truncated_normal([3, 3, 128, 256], dtype=tf.float32,
-													 stddev=1e-2), trainable = True, name='mentee_weights')
+													 stddev=1e-2, seed = seed), trainable = True, name='mentee_weights')
 			conv = tf.nn.conv2d(self.pool2, kernel, [1, 1, 1, 1], padding='SAME')
 			biases = tf.Variable(tf.constant(0.0, shape=[256], dtype=tf.float32),
 								trainable=True, name='mentee_biases')
 			out = tf.nn.bias_add(conv, biases)
-    #                    out = tf.contrib.layers.batch_norm(out,  decay=0.999,
-        #                            center=True,
-         #                               scale=False,
-          #                              updates_collections= None, is_training= train_mode)
+                        #out = tf.contrib.layers.batch_norm(out,  decay=0.999,
+                        #            center=True,
+                         #               scale=False,
+                          #              updates_collections= None, is_training= train_mode)
      #                   mean, var = tf.nn.moments(out, axes=[0])
                         #out = tf.nn.batch_normalization(out, mean, var)
                         #out = (out - mean) / tf.sqrt(var + tf.constant(1e-10))
@@ -88,15 +88,15 @@ class Mentee(object):
 
 		with tf.name_scope('mentee_conv4_1') as scope:
 			kernel = tf.Variable(tf.truncated_normal([3, 3, 256, 512], dtype=tf.float32,
-													 stddev=1e-2), trainable = True, name='mentee_weights')
+													 stddev=1e-2, seed= seed), trainable = True, name='mentee_weights')
 			conv = tf.nn.conv2d(self.pool3, kernel, [1, 1, 1, 1], padding='SAME')
 			biases = tf.Variable(tf.constant(0.0, shape=[512], dtype=tf.float32),
 								trainable=True, name='mentee_biases')
 			out = tf.nn.bias_add(conv, biases)
-           #             out = tf.contrib.layers.batch_norm(out,  decay=0.999,
-            #                        center=True,
-             #                           scale=False,
-              #                          updates_collections= None, is_training= train_mode)
+                        #out = tf.contrib.layers.batch_norm(out,  decay=0.999,
+                        #            center=True,
+                         #               scale=False,
+                          #              updates_collections= None, is_training= train_mode)
                #         mean, var = tf.nn.moments(out, axes=[0])
                         #out = tf.nn.batch_normalization(out, mean, var)
                         #out = (out - mean) / tf.sqrt(var + tf.constant(1e-10))
@@ -110,15 +110,15 @@ class Mentee(object):
 									name='pool4')
 		with tf.name_scope('mentee_conv5_1') as scope:
 			kernel = tf.Variable(tf.truncated_normal([3, 3, 512, 512], dtype=tf.float32,
-													 stddev=1e-2), trainable = True, name='mentee_weights')
+													 stddev=1e-2, seed = seed), trainable = True, name='mentee_weights')
 			conv = tf.nn.conv2d(self.pool4, kernel, [1, 1, 1, 1], padding='SAME')
 			biases = tf.Variable(tf.constant(0.0, shape=[512], dtype=tf.float32),
 								trainable=True, name='mentee_biases')
 			out = tf.nn.bias_add(conv, biases)
-                #        out = tf.contrib.layers.batch_norm(out,  decay=0.999,
-                 #                   center=True,
-                  #                      scale=False,
-                   #                     updates_collections= None, is_training= train_mode)
+                        #out = tf.contrib.layers.batch_norm(out,  decay=0.999,
+                        #            center=True,
+                         #               scale=False,
+                          #              updates_collections= None, is_training= train_mode)
                     #    mean, var = tf.nn.moments(out, axes=[0])
                         #out = tf.nn.batch_normalization(out, mean, var)
                         #out = (out - mean) / tf.sqrt(var + tf.constant(1e-10))
@@ -132,15 +132,15 @@ class Mentee(object):
 									name='pool5')
 		with tf.name_scope('mentee_conv6_1') as scope:
 			kernel = tf.Variable(tf.truncated_normal([3, 3, 512, 512], dtype=tf.float32,
-													 stddev=1e-2), trainable = True, name='mentee_weights')
+													 stddev=1e-2, seed = seed), trainable = True, name='mentee_weights')
 			conv = tf.nn.conv2d(self.pool5, kernel, [1, 1, 1, 1], padding='SAME')
 			biases = tf.Variable(tf.constant(0.0, shape=[512], dtype=tf.float32),
 								trainable=True, name='mentee_biases')
 			out = tf.nn.bias_add(conv, biases)
-                     #   out = tf.contrib.layers.batch_norm(out,  decay=0.999,
-                      #              center=True,
-                       #                 scale=False,
-                        #                updates_collections= None, is_training= train_mode)
+                        #out = tf.contrib.layers.batch_norm(out,  decay=0.999,
+                         #           center=True,
+                          #              scale=False,
+                           #             updates_collections= None, is_training= train_mode)
                         #mean, var = tf.nn.moments(out, axes=[0])
                         #out = tf.nn.batch_normalization(out, mean, var)
                         #out = (out - mean) / tf.sqrt(var + tf.constant(1e-10))
@@ -157,7 +157,7 @@ class Mentee(object):
 		with tf.name_scope('mentee_fc1') as scope:
 			shape = int(np.prod(self.pool6.get_shape()[1:]))
 			fc1w = tf.Variable(tf.truncated_normal([shape, 4096],
-														 dtype=tf.float32, stddev=1e-2), trainable = True,name='mentee_weights')
+														 dtype=tf.float32, stddev=1e-2, seed = seed), trainable = True,name='mentee_weights')
 			fc1b = tf.Variable(tf.constant(0.0, shape=[4096], dtype=tf.float32),
 								 trainable=True, name='mentee_biases')
 			pool6_flat = tf.reshape(self.pool6, [-1, shape])
@@ -176,7 +176,7 @@ class Mentee(object):
 		
                 with tf.name_scope('mentee_fc2') as scope:
 			fc2w = tf.Variable(tf.truncated_normal([4096, 4096],
-														 dtype=tf.float32, stddev=1e-2), trainable = True,name='mentee_weights')
+														 dtype=tf.float32, stddev=1e-2, seed = seed), trainable = True,name='mentee_weights')
 			fc2b = tf.Variable(tf.constant(0.0, shape=[4096], dtype=tf.float32),
 								 trainable=True, name='mentee_biases')
 			fc2l = tf.nn.bias_add(tf.matmul(self.fc1, fc2w), fc2b)
@@ -188,13 +188,13 @@ class Mentee(object):
                         #fc2l = tf.nn.batch_normalization(out, mean, var)
                         #fc2l = (fc2l - mean) / tf.sqrt(var + tf.constant(1e-10))
 			self.fc2 = tf.nn.relu(fc2l)
-#                        if train_mode == True:
- #                           self.fc2 = tf.nn.dropout(self.fc2, 0.5, seed = seed)
+                        if train_mode == True:
+                            self.fc2 = tf.nn.dropout(self.fc2, 0.5, seed = seed)
 			self.parameters += [fc2w, fc2b]
                 
                 with tf.name_scope('mentee_fc3') as scope:
 			fc3w = tf.Variable(tf.truncated_normal([4096, num_classes],
-														 dtype=tf.float32, stddev=1e-2), trainable = True,name='mentee_weights')
+														 dtype=tf.float32, stddev=1e-2, seed = seed), trainable = True,name='mentee_weights')
 			fc3b = tf.Variable(tf.constant(0.0, shape=[num_classes], dtype=tf.float32),
 								 trainable=True, name='mentee_biases')
 			self.fc3 = tf.nn.bias_add(tf.matmul(self.fc2, fc3w), fc3b)
@@ -205,7 +205,7 @@ class Mentee(object):
                 return self.conv1_1, self.conv2_1, self.conv3_1, self.conv4_1, self.conv5_1, self.conv6_1, self.fc3, tf.nn.softmax(self.fc3/temp_softmax)
 
 	def loss(self, labels):
-		labels = tf.to_int64(labels)
+		#labels = tf.to_int64(labels)
 		cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=labels,
 			logits=self.fc3, name='xentropy')
 		return tf.reduce_mean(cross_entropy, name='xentropy_mean')
@@ -216,7 +216,8 @@ class Mentee(object):
 		#optimizer = tf.train.MomentumOptimizer(learning_rate, momentum = 0.9, use_nesterov = True)
 		optimizer = tf.train.AdamOptimizer(learning_rate)
 		
-		train_op = optimizer.minimize(loss, global_step=global_step)
+		train_op = optimizer.minimize(loss, global_step=global_step
+                        )
 		
 
 		return train_op
