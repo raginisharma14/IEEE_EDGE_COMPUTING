@@ -69,6 +69,9 @@ def do_eval(sess,
         if mode == 'Test':
 	    steps_per_epoch = FLAGS.num_testing_examples //FLAGS.batch_size 
 	    num_examples = steps_per_epoch * FLAGS.batch_size
+        if mode == 'Train':
+	    steps_per_epoch = FLAGS.num_training_examples //FLAGS.batch_size 
+	    num_examples = steps_per_epoch * FLAGS.batch_size
         if mode == 'Validation':
 	    steps_per_epoch = FLAGS.num_validation_examples //FLAGS.batch_size 
 	    num_examples = steps_per_epoch * FLAGS.batch_size
@@ -291,10 +294,11 @@ def main(_):
                     mnist = read_mnist_data()
                 tf.set_random_seed(seed)
 
-		data_input_train = DataInput(dataset_path, FLAGS.train_dataset, FLAGS.batch_size, FLAGS.num_training_examples, FLAGS.image_width, FLAGS.image_height, FLAGS.num_channels, seed)
+		data_input_train = DataInput(dataset_path, FLAGS.train_dataset, FLAGS.batch_size, FLAGS.num_training_examples, FLAGS.image_width, FLAGS.image_height, FLAGS.num_channels, seed, FLAGS.dataset)
 
-		data_input_test = DataInput(dataset_path, FLAGS.test_dataset,FLAGS.batch_size, FLAGS.num_testing_examples, FLAGS.image_width, FLAGS.image_height, FLAGS.num_channels, seed)
-		data_input_validation = DataInput(dataset_path, FLAGS.validation_dataset,FLAGS.batch_size, FLAGS.num_validation_examples, FLAGS.image_width, FLAGS.image_height, FLAGS.num_channels, seed)
+		data_input_test = DataInput(dataset_path, FLAGS.test_dataset,FLAGS.batch_size, FLAGS.num_testing_examples, FLAGS.image_width, FLAGS.image_height, FLAGS.num_channels, seed, FLAGS.dataset)
+
+		data_input_validation = DataInput(dataset_path, FLAGS.validation_dataset,FLAGS.batch_size, FLAGS.num_validation_examples, FLAGS.image_width, FLAGS.image_height, FLAGS.num_channels, seed, FLAGS.dataset)
 		images_placeholder, labels_placeholder = placeholder_inputs(FLAGS.batch_size)
 		sess = tf.Session(config = config)
                 
@@ -409,9 +413,10 @@ def main(_):
 					print ('Step %d: loss_value5 = %.20f' % (i, loss_value5))
 					print ('Step %d: loss_value6 = %.20f' % (i, loss_value6))
 
-					#summary_str = sess.run(summary, feed_dict=feed_dict)
-					#summary_writer.add_summary(summary_str, i)
-					#summary_writer.flush()
+					summary_str = sess.run(summary, feed_dict=feed_dict)
+					summary_writer.add_summary(summary_str, i)
+					summary_writer.flush()
+
 				if (i) %(FLAGS.NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN//FLAGS.batch_size)  == 0 or (i) == NUM_ITERATIONS:
 					
                                         checkpoint_file = os.path.join(SUMMARY_LOG_DIR, 'model.ckpt')
@@ -455,14 +460,15 @@ def main(_):
                                                     'Test', phase_train)
                                             
                                         else:
-                                            print ("Validation Data Eval:")
+                                            print ("Training Data Eval:")
                                             do_eval(sess, 
                                                     eval_correct,
                                                     softmax,
                                                     images_placeholder,
                                                     labels_placeholder,
-                                                    data_input_validation, 
-                                                    'Validation', phase_train)
+                                                    data_input_train, 
+                                                    'Train', phase_train)
+
                                             print ("Test  Data Eval:")
                                             do_eval(sess, 
                                                     eval_correct,
@@ -480,6 +486,7 @@ def main(_):
                     index = np.argmax(validation_accuracy_list)
                     print("Model accuracy::", test_accuracy_list[index])
 	sess.close()
+        summary_writer.close()
 
 if __name__ == '__main__':
         parser = argparse.ArgumentParser()
@@ -571,12 +578,12 @@ if __name__ == '__main__':
         parser.add_argument(
             '--NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN',
             type = int,
-            default = 5853                                    
+            default = 7316                                    
         )
         parser.add_argument(
             '--num_training_examples',
             type = int,
-            default = 5853                                    
+            default = 7316
         )
         parser.add_argument(
             '--num_testing_examples',

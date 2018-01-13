@@ -5,7 +5,7 @@ import random
 
 class DataInput(object):
 
-	def __init__(self, dataset_path, train_labels_file, batch_size, num_examples, image_width, image_height, num_channels, seed):
+	def __init__(self, dataset_path, train_labels_file, batch_size, num_examples, image_width, image_height, num_channels, seed, dataset):
 		self.dataset_path = dataset_path
 		self.train_labels_file = train_labels_file
 		self.num_examples = num_examples
@@ -13,6 +13,7 @@ class DataInput(object):
                 self.image_width = image_width
                 self.num_channels = num_channels
                 self.seed = seed
+                self.dataset = dataset
 
 		# Create the File Name queue
 		self.filename_queue = tf.train.string_input_producer([self.dataset_path + self.train_labels_file], num_epochs=None)
@@ -44,18 +45,18 @@ class DataInput(object):
 	def decode_jpeg(self):
 		
 		file_content = tf.read_file(self.col2)
-		self.train_image = tf.image.decode_jpeg(file_content, channels=self.num_channels)
-               # self.train_image = tf.random_crop(self.train_image, [self.image_height, self.image_width])
-                 
-                distorted_image = tf.image.random_flip_left_right(self.train_image)
+                if self.dataset == 'caltech101': 
+		    self.train_image = tf.image.decode_jpeg(file_content, channels=self.num_channels)
+                    distorted_image = tf.image.random_flip_left_right(self.train_image)
                      
-                """
-                    Ramdom_brightness and Random_contrast are not required for caltech101.
-                    Addition leads to non-convergence of the loss on caltech101.
+                    self.train_image = tf.image.per_image_standardization(distorted_image)
+		    self.train_image = tf.image.resize_images(self.train_image, [self.image_width, self.image_height])
+                if self.dataset == 'cifar10':
 
-                """
-                #distorted_image = tf.image.random_brightness(distorted_image, max_delta=63)
-                #distorted_image = tf.image.random_contrast(distorted_image, lower=0.2, upper=1.8)
-                                 
-                self.train_image = tf.image.per_image_standardization(distorted_image)
-		self.train_image = tf.image.resize_images(self.train_image, [self.image_width, self.image_height])
+		    self.train_image = tf.image.decode_png(file_content, channels=self.num_channels)
+                    self.train_image = tf.random_crop(self.train_image, [self.image_height, self.image_width])
+                    distorted_image = tf.image.random_flip_left_right(self.train_image)
+                    distorted_image = tf.image.random_brightness(distorted_image, max_delta=63)
+                    distorted_image = tf.image.random_contrast(distorted_image, lower=0.2, upper=1.8)
+                    self.train_image = tf.image.per_image_standardization(distorted_image)
+		    self.train_image = tf.image.resize_images(self.train_image, [self.image_width, self.image_height])
