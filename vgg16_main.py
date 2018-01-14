@@ -443,15 +443,44 @@ class VGG16(object):
                                     if FLAGS.dependent_student and FLAGS.multiple_optimizers:
 
                                         self.calculate_loss_with_multiple_optimizers(self.train_op0, loss, self.train_op1, self.l1, self.train_op2, self.l2, self.train_op3, self.l3, self.train_op4, self.l4, self.train_op5, self.l5, self.train_op6, self.l6, feed_dict, sess)
-                                        
+                                            
                                         if i % 10 == 0:
-                                            print ('Step %d: loss_value0 = %.20f' % (i, self.loss_value0))
-                                            print ('Step %d: loss_value1 = %.20f' % (i, self.loss_value1))
-                                            print ('Step %d: loss_value2 = %.20f' % (i, self.loss_value2))
-                                            print ('Step %d: loss_value3 = %.20f' % (i, self.loss_value3))
-                                            print ('Step %d: loss_value4 = %.20f' % (i, self.loss_value4))
-                                            print ('Step %d: loss_value5 = %.20f' % (i, self.loss_value5))
-                                            print ('Step %d: loss_value6 = %.20f' % (i, self.loss_value6))
+                                            if FLAGS.multiple_optimizers_l0:
+                                                print ('Step %d: loss_value0 = %.20f' % (i, self.loss_value0))
+                                            elif FLAGS.multiple_optimizers_l1:
+
+                                                print ('Step %d: loss_value0 = %.20f' % (i, self.loss_value0))
+                                                print ('Step %d: loss_value1 = %.20f' % (i, self.loss_value1))
+                                            elif FLAGS.multiple_optimizers_l2:
+                                                print ('Step %d: loss_value0 = %.20f' % (i, self.loss_value0))
+                                                print ('Step %d: loss_value1 = %.20f' % (i, self.loss_value1))
+                                                print ('Step %d: loss_value2 = %.20f' % (i, self.loss_value2))
+                                            elif FLAGS.multiple_optimizers_l3:
+                                                print ('Step %d: loss_value0 = %.20f' % (i, self.loss_value0))
+                                                print ('Step %d: loss_value1 = %.20f' % (i, self.loss_value1))
+                                                print ('Step %d: loss_value2 = %.20f' % (i, self.loss_value2))
+                                                print ('Step %d: loss_value3 = %.20f' % (i, self.loss_value3))
+                                            elif FLAGS.multiple_optimizers_l4:
+                                                print ('Step %d: loss_value0 = %.20f' % (i, self.loss_value0))
+                                                print ('Step %d: loss_value1 = %.20f' % (i, self.loss_value1))
+                                                print ('Step %d: loss_value2 = %.20f' % (i, self.loss_value2))
+                                                print ('Step %d: loss_value3 = %.20f' % (i, self.loss_value3))
+                                                print ('Step %d: loss_value4 = %.20f' % (i, self.loss_value4))
+                                            elif FLAGS.multiple_optimizers_l5:
+                                                print ('Step %d: loss_value0 = %.20f' % (i, self.loss_value0))
+                                                print ('Step %d: loss_value1 = %.20f' % (i, self.loss_value1))
+                                                print ('Step %d: loss_value2 = %.20f' % (i, self.loss_value2))
+                                                print ('Step %d: loss_value3 = %.20f' % (i, self.loss_value3))
+                                                print ('Step %d: loss_value4 = %.20f' % (i, self.loss_value4))
+                                                print ('Step %d: loss_value5 = %.20f' % (i, self.loss_value5))
+                                            elif FLAGS.multiple_optimizers_l6:
+                                                print ('Step %d: loss_value0 = %.20f' % (i, self.loss_value0))
+                                                print ('Step %d: loss_value1 = %.20f' % (i, self.loss_value1))
+                                                print ('Step %d: loss_value2 = %.20f' % (i, self.loss_value2))
+                                                print ('Step %d: loss_value3 = %.20f' % (i, self.loss_value3))
+                                                print ('Step %d: loss_value4 = %.20f' % (i, self.loss_value4))
+                                                print ('Step %d: loss_value5 = %.20f' % (i, self.loss_value5))
+                                                print ('Step %d: loss_value6 = %.20f' % (i, self.loss_value6))
 
                                             summary_str = sess.run(summary, feed_dict=feed_dict)
                                             summary_writer.add_summary(summary_str, i)
@@ -651,7 +680,7 @@ if __name__ == '__main__':
             '--dataset',
             type = str,
             help = 'name of the dataset',
-            default = 'cifar10'
+            default = 'caltech101'
         )
         parser.add_argument(
             '--mnist_data_dir',
