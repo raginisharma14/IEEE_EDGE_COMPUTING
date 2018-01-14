@@ -410,7 +410,7 @@ class VGG16(object):
                         self.rmse_loss(mentor_conv1_2, mentee_conv1_1, mentee_conv2_1,mentor_conv2_2, mentor_conv3_1,mentee_conv3_1,mentor_conv4_3,mentee_conv4_1, mentor_conv5_2,mentee_conv5_1, logits_mentor, logits_mentee)
                         lr = tf.train.exponential_decay(FLAGS.learning_rate,global_step, decay_steps,LEARNING_RATE_DECAY_FACTOR,staircase=True)
                         if FLAGS.single_optimizer:
-                            self.rain_op_for_single_optimizer(lr, loss, self.l1, self.l2, self.l3, self.l4, self.l5, self.l6)
+                            self.train_op_for_single_optimizer(lr, loss, self.l1, self.l2, self.l3, self.l4, self.l5, self.l6)
                         if FLAGS.multiple_optimizers:
                             self.train_op_for_multiple_optimizers(lr, loss, self.l1, self.l2, self.l3, self.l4, self.l5, self.l6)
 
