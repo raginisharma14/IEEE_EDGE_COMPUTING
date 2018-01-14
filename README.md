@@ -5,7 +5,7 @@ A particular teacher layer gives knowledge in the form of representations only t
 For a better understanding, assume the first layer of the teacher and student network extract edges of the input image. Second layer extracts objects like circles. Hence, transfering knowledge from the first layer of the teacher to the second layer of the student is not beneficial. Random mapping of the teacher-student layers can sometimes be lucky but not always. I propose to use cosine similarity metric to find the mapping of student-teacher layers. In cosine similarity metric, the outputs of the student-teacher layer pairs are normalized. Dot product of the normalized outputs is calculated. Higher the value of the dot product, greater is the similarity.
 
 ## Command to Execute Independent Student:<br />
-- python vgg16_main.py <br />
+- python vgg16_main.py 
           --student True <br />
           --dataset caltech101 <br />
           --learning_rate 0.0001 <br />
@@ -38,5 +38,5 @@ For a better understanding, assume the first layer of the teacher and student ne
 
 ## Pre-Trained Weights </br>
 
-vgg16.npy can be downloaded from here [VGG16 Weights](ftp://mi.eng.cam.ac.uk/pub/mttt2/models/vgg16.npy)
+vgg16.npy can be downloaded from here [VGG16 Weights](ftp://mi.eng.cam.ac.uk/pub/mttt2/models/vgg16.npy)</br>
 vgg16.npz can be downloaded from here [VGG16 Weights](https://www.cs.toronto.edu/~frossard/vgg16/vgg16_weights.npz)
