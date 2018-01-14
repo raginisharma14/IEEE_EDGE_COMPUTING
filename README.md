@@ -38,5 +38,5 @@ For a better understanding, assume the first layer of the teacher and student ne
 
 ## Pre-Trained Weights </br>
 
-vgg16.npy can be downloaded from here [VGG16 Weights] (ftp://mi.eng.cam.ac.uk/pub/mttt2/models/vgg16.npy)
-vgg16.npz can be downloaded from here [VGG16 Weights] (https://www.cs.toronto.edu/~frossard/vgg16/vgg16_weights.npz)
+vgg16.npy can be downloaded from here [VGG16 Weights](ftp://mi.eng.cam.ac.uk/pub/mttt2/models/vgg16.npy)
+vgg16.npz can be downloaded from here [VGG16 Weights](https://www.cs.toronto.edu/~frossard/vgg16/vgg16_weights.npz)
