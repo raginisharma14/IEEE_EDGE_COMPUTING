@@ -31,14 +31,16 @@ For a better understanding, assume the first layer of the teacher and student ne
       --batch_size 45<br />
       --learning_rate 0.005<br />
       --dataset caltech101<br />
-## Task List:</br>
-- [ ] Implement new KT technique on VGG16 teacher-Student model
-- [ ] Implement new KT technique on mobilenet teacher-Student model
 
 ## Hyperparameters </br>
 -Independent Student - batch-size 45; learning rate 0.0001
 
+## Experiments </br>
+- [x] Train VGG16 Independent Student on Caltech101
+- [ ] Train VGG16 Dependent Student on Caltech101 with new method
+- 
+
 ## Pre-Trained Weights </br>
 
-vgg16.npy can be downloaded from here [VGG16 Weights](ftp://mi.eng.cam.ac.uk/pub/mttt2/models/vgg16.npy)</br>
+vgg16.npy can be downloaded from here [VGG16 Weights](ftp://mi.eng.cam.ac.uk/pub/mttt2/models/vgg16.npy) </br>
 vgg16.npz can be downloaded from here [VGG16 Weights](https://www.cs.toronto.edu/~frossard/vgg16/vgg16_weights.npz)
