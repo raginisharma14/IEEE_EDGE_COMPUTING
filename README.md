@@ -1,4 +1,4 @@
-Modified Knowledge Transfer Technique
+Modified Knowledge Transfer Technique 
 
 Command to execute independent student:
 1. python vgg16_main.py 
