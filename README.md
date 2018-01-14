@@ -35,6 +35,8 @@ For a better understanding, assume the first layer of the teacher and student ne
 - [ ] Implement new KT technique on VGG16 teacher-Student model
 - [ ] Implement new KT technique on mobilenet teacher-Student model
 
+## Hyperparameters </br>
+-Independent Student - batch-size 45; learning rate 0.0001
 
 ## Pre-Trained Weights </br>
 
