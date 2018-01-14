@@ -3,15 +3,15 @@ import numpy as np
 import random
 from DataInput import DataInput
 from mobilenetmentee import Mentee
-from VGG16 import VGG16
 from mobilenetmentor import Mentor
-
+from student import Mentee
 from embed import Embed
 import os
 import pdb
 import sys
 from tensorflow.python import debug as tf_debug
 from tensorflow.contrib.learn.python.learn.datasets.mnist import read_data_sets
+from tensorflow.contrib.keras.python.keras.losses import sparse_categorical_crossentropy
 import argparse
 dataset_path = "./"
 tf.reset_default_graph()
@@ -21,7 +21,7 @@ LEARNING_RATE_DECAY_FACTOR = 0.9809
 NUM_EPOCHS_PER_DECAY = 1.0
 validation_accuracy_list = []
 test_accuracy_list = []
-seed = 1
+seed = 123456
 def read_mnist_data():
     mnist = read_data_sets(FLAGS.mnist_data_dir)
     return mnist      
@@ -377,11 +377,11 @@ def main(_):
                     print("Independent student")
                     num_batches_per_epoch = FLAGS.NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN / FLAGS.batch_size
                     decay_steps = int(num_batches_per_epoch * NUM_EPOCHS_PER_DECAY)
-                    data_dict = student.build(images_placeholder, FLAGS.student_alpha, phase_train, FLAGS.num_classes,FLAGS.num_channels, seed, True)
+                    data_dict = student.build(FLAGS.student_alpha, images_placeholder, FLAGS.num_classes)
                     loss = student.loss(labels_placeholder)
                     lr = tf.train.exponential_decay(FLAGS.learning_rate,global_step, decay_steps,LEARNING_RATE_DECAY_FACTOR,staircase=True)
                     train_op = student.training(loss,lr, global_step)
-                    softmax = data_dict['conv20']
+                    softmax = data_dict.conv22
                     init = tf.initialize_all_variables()
                     sess.run(init)
                     saver = tf.train.Saver()

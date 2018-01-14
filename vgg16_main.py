@@ -227,7 +227,7 @@ class VGG16(object):
 
     def calculate_loss_with_multiple_optimizers(self, train_op0, loss, train_op1, l1, train_op2, l2, train_op3, l3, train_op4, l4, train_op5, l5, train_op6, l6, feed_dict, sess):
 
-        if multiple_optimizers_l0:
+        if FLAGS.multiple_optimizers_l0:
             _, self.loss_value0 = sess.run([train_op0, loss], feed_dict=feed_dict)
             """
             covalue1 = sess.run(cosine1, feed_dict=feed_dict)
@@ -244,23 +244,23 @@ class VGG16(object):
             covalue12= sess.run(cosine12, feed_dict=feed_dict)
             covalue13 = sess.run(cosine13, feed_dict=feed_dict)
             """
-        elif multiple_optimizers_l1:
+        elif FLAGS.multiple_optimizers_l1:
             _, self.loss_value0 = sess.run([train_op0, loss], feed_dict=feed_dict)
             _, self.loss_value1 = sess.run([train_op1, l1], feed_dict=feed_dict)
             
             
-        elif multiple_optimizers_l2:
+        elif FLAGS.multiple_optimizers_l2:
             _, self.loss_value0 = sess.run([train_op0, loss], feed_dict=feed_dict)
             _, self.loss_value1 = sess.run([train_op1, l1], feed_dict=feed_dict)
             _, self.loss_value2 = sess.run([train_op2, l2], feed_dict=feed_dict)
                                     
-        elif multiple_optimizers_l3:
+        elif FLAGS.multiple_optimizers_l3:
             _, self.loss_value0 = sess.run([train_op0, loss], feed_dict=feed_dict)
             _, self.loss_value1 = sess.run([train_op1, l1], feed_dict=feed_dict)
             _, self.loss_value2 = sess.run([train_op2, l2], feed_dict=feed_dict)
             _, self.loss_value3 = sess.run([train_op3, l3], feed_dict=feed_dict)
         
-        elif multiple_optimizers_l4:
+        elif FLAGS.multiple_optimizers_l4:
             _, self.loss_value0 = sess.run([train_op0, loss], feed_dict=feed_dict)
             _, self.loss_value1 = sess.run([train_op1, l1], feed_dict=feed_dict)
             _, self.loss_value2 = sess.run([train_op2, l2], feed_dict=feed_dict)
@@ -268,11 +268,20 @@ class VGG16(object):
             _, self.loss_value4 = sess.run([train_op4, l4], feed_dict=feed_dict)
         
 
-        elif multiple_optimizers_l5:                             
+        elif FLAGS.multiple_optimizers_l5:                             
             _, self.loss_value0 = sess.run([train_op0, loss], feed_dict=feed_dict)
             _, self.loss_value1 = sess.run([train_op1, l1], feed_dict=feed_dict)
             _, self.loss_value2 = sess.run([train_op2, l2], feed_dict=feed_dict)
             _, self.loss_value3 = sess.run([train_op3, l3], feed_dict=feed_dict)
+            _, self.loss_value4 = sess.run([train_op4, l4], feed_dict=feed_dict)
+            _, self.loss_value5 = sess.run([train_op5, l5], feed_dict=feed_dict)
+        
+        elif FLAGS.multiple_optimizers_l6:                             
+            _, self.loss_value0 = sess.run([train_op0, loss], feed_dict=feed_dict)
+            _, self.loss_value1 = sess.run([train_op1, l1], feed_dict=feed_dict)
+            _, self.loss_value2 = sess.run([train_op2, l2], feed_dict=feed_dict)
+            _, self.loss_value3 = sess.run([train_op3, l3], feed_dict=feed_dict)
+            _, self.loss_value4 = sess.run([train_op4, l4], feed_dict=feed_dict)
             _, self.loss_value5 = sess.run([train_op5, l5], feed_dict=feed_dict)
             _, self.loss_value6 = sess.run([train_op6, l6], feed_dict=feed_dict)
                                          
@@ -396,14 +405,14 @@ class VGG16(object):
                         softmax = softmax_mentee
                         softmax_loss = tf.sqrt(tf.reduce_mean(tf.square(tf.subtract(softmax_mentor, softmax_mentee))))
                         mentor_variables_to_restore = []
-                        mentor_variables_to_restore = get_mentor_variables_to_restore(mentor_variables_to_restore)
+                        mentor_variables_to_restore = self.get_mentor_variables_to_restore(mentor_variables_to_restore)
                         loss = vgg16_mentee.loss(labels_placeholder)
-                        rmse_loss(mentor_conv1_2, mentee_conv1_1, mentee_conv2_1,mentor_conv2_2, mentor_conv3_1,mentee_conv3_1,mentor_conv4_3,mentee_conv4_1, mentor_conv5_2,mentee_conv5_1, logits_mentor, logits_mentee)
+                        self.rmse_loss(mentor_conv1_2, mentee_conv1_1, mentee_conv2_1,mentor_conv2_2, mentor_conv3_1,mentee_conv3_1,mentor_conv4_3,mentee_conv4_1, mentor_conv5_2,mentee_conv5_1, logits_mentor, logits_mentee)
                         lr = tf.train.exponential_decay(FLAGS.learning_rate,global_step, decay_steps,LEARNING_RATE_DECAY_FACTOR,staircase=True)
                         if FLAGS.single_optimizer:
-                            train_op_for_single_optimizer(lr, loss, self.l1, self.l2, self.l3, self.l4, self.l5, self.l6)
+                            self.rain_op_for_single_optimizer(lr, loss, self.l1, self.l2, self.l3, self.l4, self.l5, self.l6)
                         if FLAGS.multiple_optimizers:
-                            train_op_for_multiple_optimizers(lr, loss, self.l1, self.l2, self.l3, self.l4, self.l5, self.l6)
+                            self.train_op_for_multiple_optimizers(lr, loss, self.l1, self.l2, self.l3, self.l4, self.l5, self.l6)
 
                         #train_op0, train_op1, train_op2, train_op3, train_op4, train_op5, train_op6 = train_op_for_multiple_optimizers(lr, loss, l1, l2, l3, l4, l5, l6)
                         init = tf.initialize_all_variables()

@@ -47,7 +47,7 @@ class Mentor(object):
             depthwise_filter = tf.Variable(tf.truncated_normal([3, 3, int(alpha*64), 1], dtype= tf.float32, stddev = 1e-2, seed=seed), trainable = trainable, name = 'mentor_weights')
             pointwise_filter = tf.Variable(tf.truncated_normal([1, 1, int(alpha*64), int(128 * alpha)], dtype= tf.float32, stddev = 1e-2, seed=seed), trainable = trainable, name = 'mentor_weights')
             self.conv3 = tf.nn.separable_conv2d(self.conv2, depthwise_filter, pointwise_filter, [1, 2, 2, 1], "SAME")
- #           self.conv3 = tf.contrib.layers.batch_norm(self.conv3, decay = 0.9, center = True, scale = False, updates_collections = None, is_training= train_mode)            
+            self.conv3 = tf.contrib.layers.batch_norm(self.conv3, decay = 0.9, center = True, scale = False, updates_collections = None, is_training= train_mode)            
 
             self.conv3 = tf.nn.relu(self.conv3)
 
@@ -55,7 +55,7 @@ class Mentor(object):
             depthwise_filter = tf.Variable(tf.truncated_normal([3, 3, int(alpha*128), 1], dtype= tf.float32, stddev = 1e-2, seed=seed), trainable = trainable, name = 'mentor_weights')
             pointwise_filter = tf.Variable(tf.truncated_normal([1, 1, int(alpha*128), int(128 *alpha)], dtype= tf.float32, stddev = 1e-2, seed=seed), trainable = trainable, name = 'mentor_weights')
             self.conv4 = tf.nn.separable_conv2d(self.conv3, depthwise_filter, pointwise_filter, [1, 1, 1, 1], "SAME")
-  #          self.conv4 = tf.contrib.layers.batch_norm(self.conv4, decay = 0.9, center = True, scale = False, updates_collections = None, is_training= train_mode)            
+            self.conv4 = tf.contrib.layers.batch_norm(self.conv4, decay = 0.9, center = True, scale = False, updates_collections = None, is_training= train_mode)            
 
             self.conv4 = tf.nn.relu(self.conv4)
 
@@ -63,7 +63,7 @@ class Mentor(object):
             depthwise_filter = tf.Variable(tf.truncated_normal([3, 3, int(alpha*128), 1], dtype= tf.float32, stddev = 1e-2, seed=seed),trainable = trainable, name = 'mentor_weights')
             pointwise_filter = tf.Variable(tf.truncated_normal([1, 1, int(alpha*128), int(256* alpha)], dtype= tf.float32, stddev = 1e-2, seed=seed), trainable = trainable, name = 'mentor_weights')
             self.conv5 = tf.nn.separable_conv2d(self.conv4, depthwise_filter, pointwise_filter, [1,2,2,1], "SAME")
-   #         self.conv5 = tf.contrib.layers.batch_norm(self.conv5, decay = 0.9, center = True, scale = False, updates_collections = None, is_training= train_mode)            
+            self.conv5 = tf.contrib.layers.batch_norm(self.conv5, decay = 0.9, center = True, scale = False, updates_collections = None, is_training= train_mode)            
 
             self.conv5 = tf.nn.relu(self.conv5)
 
@@ -71,63 +71,63 @@ class Mentor(object):
             depthwise_filter = tf.Variable(tf.truncated_normal([3, 3, int(alpha*256), 1], dtype= tf.float32, stddev = 1e-2, seed=seed), trainable = trainable, name = 'mentor_weights')
             pointwise_filter = tf.Variable(tf.truncated_normal([1, 1, int(alpha*256), int(256* alpha)], dtype= tf.float32, stddev = 1e-2, seed=seed), trainable = trainable, name = 'mentor_weights')
             self.conv6 = tf.nn.separable_conv2d(self.conv5, depthwise_filter, pointwise_filter, [1, 1, 1, 1], "SAME")
-    #        self.conv6 = tf.contrib.layers.batch_norm(self.conv6, decay = 0.9, center = True, scale = False, updates_collections = None, is_training= train_mode)            
+            self.conv6 = tf.contrib.layers.batch_norm(self.conv6, decay = 0.9, center = True, scale = False, updates_collections = None, is_training= train_mode)            
             self.conv6 = tf.nn.relu(self.conv6)
 
 	with tf.name_scope('mentor_conv7_1') as scope:
             depthwise_filter = tf.Variable(tf.truncated_normal([3, 3, int(256*alpha), 1], dtype= tf.float32, stddev = 1e-2, seed=seed),trainable = trainable, name = 'mentor_weights')
             pointwise_filter = tf.Variable(tf.truncated_normal([1, 1, int(alpha*256), int(alpha*512)], dtype= tf.float32, stddev = 1e-2, seed=seed), trainable = trainable, name = 'mentor_weights')
             self.conv7 = tf.nn.separable_conv2d(self.conv6, depthwise_filter, pointwise_filter, [1, 2, 2,1], "SAME")
-     #       self.conv7 = tf.contrib.layers.batch_norm(self.conv7, decay = 0.9, center = True, scale = False, updates_collections = None, is_training= train_mode)            
+            self.conv7 = tf.contrib.layers.batch_norm(self.conv7, decay = 0.9, center = True, scale = False, updates_collections = None, is_training= train_mode)            
             self.conv7 = tf.nn.relu(self.conv7)
 
 	with tf.name_scope('mentor_conv8_1') as scope:
             depthwise_filter = tf.Variable(tf.truncated_normal([3, 3, int(512* alpha), 1], dtype= tf.float32, stddev = 1e-2, seed=seed), trainable = trainable,name = 'mentor_weights')
             pointwise_filter = tf.Variable(tf.truncated_normal([1, 1, int(alpha*512), int(alpha*512)], dtype= tf.float32, stddev = 1e-2, seed=seed), trainable = trainable, name = 'mentor_weights')
             self.conv8 = tf.nn.separable_conv2d(self.conv7, depthwise_filter, pointwise_filter, [1, 1, 1, 1], "SAME")
-      #      self.conv8 = tf.contrib.layers.batch_norm(self.conv8, decay = 0.9, center = True, scale = False, updates_collections = None, is_training= train_mode)            
+            self.conv8 = tf.contrib.layers.batch_norm(self.conv8, decay = 0.9, center = True, scale = False, updates_collections = None, is_training= train_mode)            
             self.conv8 = tf.nn.relu(self.conv8)
 
 	with tf.name_scope('mentor_conv9_1') as scope:
             depthwise_filter = tf.Variable(tf.truncated_normal([3, 3, int(alpha*512), 1], dtype= tf.float32, stddev = 1e-2, seed=seed),trainable = trainable, name = 'mentor_weights')
             pointwise_filter = tf.Variable(tf.truncated_normal([1, 1, int(alpha*512), int(512* alpha)], dtype= tf.float32, stddev = 1e-2, seed=seed), trainable = trainable, name = 'mentor_weights')
             self.conv9 = tf.nn.separable_conv2d(self.conv8,depthwise_filter, pointwise_filter,  [1, 1, 1, 1], "SAME")
-       #     self.conv9 = tf.contrib.layers.batch_norm(self.conv9, decay = 0.9, center = True, scale = False, updates_collections = None, is_training= train_mode)            
+            self.conv9 = tf.contrib.layers.batch_norm(self.conv9, decay = 0.9, center = True, scale = False, updates_collections = None, is_training= train_mode)            
             self.conv9 = tf.nn.relu(self.conv9)
 
 	with tf.name_scope('mentor_conv10_1') as scope:
             depthwise_filter = tf.Variable(tf.truncated_normal([3, 3, int(512* alpha), 1], dtype= tf.float32, stddev = 1e-2, seed=seed), trainable = trainable,name = 'mentor_weights')
             pointwise_filter = tf.Variable(tf.truncated_normal([1, 1, int(alpha*512), int(512* alpha)], dtype= tf.float32, stddev = 1e-2, seed=seed),trainable = trainable, name = 'mentor_weights')
             self.conv10 = tf.nn.separable_conv2d(self.conv9, depthwise_filter, pointwise_filter,  [1, 1, 1, 1], "SAME")
-        #    self.conv10 = tf.contrib.layers.batch_norm(self.conv10, decay = 0.9, center = True, scale = False, updates_collections = None, is_training= train_mode)            
+            self.conv10 = tf.contrib.layers.batch_norm(self.conv10, decay = 0.9, center = True, scale = False, updates_collections = None, is_training= train_mode)            
             self.conv10 = tf.nn.relu(self.conv10)
 
 	with tf.name_scope('mentor_conv11_1') as scope:
             depthwise_filter = tf.Variable(tf.truncated_normal([3, 3, int(512 *alpha), 1], dtype= tf.float32, stddev = 1e-2, seed=seed),trainable = trainable, name = 'mentor_weights')
             pointwise_filter = tf.Variable(tf.truncated_normal([1, 1, int(alpha*512), int(512 *alpha)], dtype= tf.float32, stddev = 1e-2, seed=seed), trainable = trainable,name = 'mentor_weights')
             self.conv11= tf.nn.separable_conv2d(self.conv10, depthwise_filter, pointwise_filter,  [1, 1, 1, 1], "SAME")
-         #   self.conv11 = tf.contrib.layers.batch_norm(self.conv11, decay = 0.9, center = True, scale = False, updates_collections = None, is_training= train_mode)            
+            self.conv11 = tf.contrib.layers.batch_norm(self.conv11, decay = 0.9, center = True, scale = False, updates_collections = None, is_training= train_mode)            
             self.conv11 = tf.nn.relu(self.conv11)
 
 	with tf.name_scope('mentor_conv12_1') as scope:
             depthwise_filter = tf.Variable(tf.truncated_normal([3, 3, int(512*alpha), 1], dtype= tf.float32, stddev = 1e-2, seed=seed), trainable = trainable,name = 'mentor_weights')
             pointwise_filter = tf.Variable(tf.truncated_normal([1, 1, int(alpha*512), int(512*alpha)], dtype= tf.float32, stddev = 1e-2, seed=seed), trainable = trainable, name = 'mentor_weights')
             self.conv12= tf.nn.separable_conv2d(self.conv11, depthwise_filter, pointwise_filter,  [1, 1, 1, 1], "SAME")
-          #  self.conv12 = tf.contrib.layers.batch_norm(self.conv12, decay = 0.9, center = True, scale = False, updates_collections = None, is_training= train_mode)            
+            self.conv12 = tf.contrib.layers.batch_norm(self.conv12, decay = 0.9, center = True, scale = False, updates_collections = None, is_training= train_mode)            
             self.conv12 = tf.nn.relu(self.conv12)
 
 	with tf.name_scope('mentor_conv13_1') as scope:
             depthwise_filter = tf.Variable(tf.truncated_normal([3, 3, int(512 *alpha), 1], dtype= tf.float32, stddev = 1e-2, seed=seed), trainable = trainable ,name = 'mentor_weights')
             pointwise_filter = tf.Variable(tf.truncated_normal([1, 1, int(alpha*512), int(1024 *alpha)], dtype= tf.float32, stddev = 1e-2, seed=seed), trainable = trainable,name = 'mentor_weights')
             self.conv13 = tf.nn.separable_conv2d(self.conv12, depthwise_filter, pointwise_filter,  [1, 2, 2, 1], "SAME")
-           # self.conv13 = tf.contrib.layers.batch_norm(self.conv13, decay = 0.9, center = True, scale = False, updates_collections = None, is_training= train_mode)            
+            self.conv13 = tf.contrib.layers.batch_norm(self.conv13, decay = 0.9, center = True, scale = False, updates_collections = None, is_training= train_mode)            
             self.conv13 = tf.nn.relu(self.conv13)
 
 	with tf.name_scope('mentor_conv14_1') as scope:
             depthwise_filter = tf.Variable(tf.truncated_normal([3, 3, int(1024 *alpha), 1], dtype= tf.float32, stddev = 1e-2, seed=seed), trainable = trainable, name = 'mentor_weights')
             pointwise_filter = tf.Variable(tf.truncated_normal([1, 1, int(alpha*1024), int(1024 *alpha)], dtype= tf.float32, stddev = 1e-2, seed=seed), trainable = trainable, name = 'mentor_weights')
             self.conv14 = tf.nn.separable_conv2d(self.conv13, depthwise_filter, pointwise_filter,  [1, 1, 1, 1], "SAME")
-            #self.conv14 = tf.contrib.layers.batch_norm(self.conv14, decay = 0.9, center = True, scale = False, updates_collections = None, is_training= train_mode)            
+            self.conv14 = tf.contrib.layers.batch_norm(self.conv14, decay = 0.9, center = True, scale = False, updates_collections = None, is_training= train_mode)            
             self.conv14 = tf.nn.relu(self.conv14)
 
         with tf.name_scope('mentor_conv15_1') as scope:
@@ -141,7 +141,7 @@ class Mentor(object):
 	    kernel = tf.Variable(tf.truncated_normal([1, 1, int(1024 * alpha), num_classes], dtype = tf.float32, stddev = 1e-2, seed = seed),trainable = trainable, name = "mentor_weights")
             #self.conv17 = tf.nn.dropout(self.conv16, 0.5)
             self.conv18 = tf.nn.conv2d(self.conv16, kernel, [1, 1, 1, 1], padding='SAME')
-            #self.conv18 = tf.contrib.layers.batch_norm(self.conv18, decay = 0.9, center = True, scale = False, updates_collections = None, is_training= train_mode)            
+            self.conv18 = tf.contrib.layers.batch_norm(self.conv18, decay = 0.9, center = True, scale = False, updates_collections = None, is_training= train_mode)            
             self.conv19 = tf.nn.softmax(self.conv18)
             self.conv20 = tf.reshape(self.conv19, [-1, num_classes])
 	
