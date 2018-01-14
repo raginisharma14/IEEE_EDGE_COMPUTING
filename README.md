@@ -1,6 +1,10 @@
-Modified Knowledge Transfer Technique 
+# Modified Knowledge Transfer Technique 
 
-Command to execute independent student:<br />
+A particular teacher layer gives knowledge in the form of representations only to a particular student layer. This knowledge does not affect any other layer of the student network other than the target layer. By doing so, the student can learn more effectively compared to traditional knowledge transfer techniques. In neural networks every layer extracts specific features of the input image. Each layer of the student and teacher network extract different features. Hence, the features from different layers of the teacher network cannot be applied uniformly to all the layers of the student network. 
+
+For a better understanding, assume the first layer of the teacher and student network extract edges of the input image. Second layer extracts objects like circles. Hence, transfering knowledge from the first layer of the teacher to the second layer of the student is not beneficial. Random mapping of the teacher-student layers can sometimes be lucky but not always. I propose to use cosine similarity metric to find the mapping of student-teacher layers. In cosine similarity metric, the outputs of the student-teacher layer pairs are normalized. Dot product of the normalized outputs is calculated. Higher the value of the dot product, greater is the similarity.
+
+## Command to Execute Independent Student:<br />
 - python vgg16_main.py <br />
           --student True <br />
           --dataset caltech101 <br />
@@ -11,7 +15,7 @@ Command to execute independent student:<br />
           --dataset cifar10 <br />
           --learning_rate 0.0001 <br />
 
-Command to execute dependent student:<br />
+## Command to Execute Dependent Student:<br />
 - python main.py<br />
       --student True<br />
       --train_dataset caltech101-train.txt <br />
@@ -27,8 +31,12 @@ Command to execute dependent student:<br />
       --batch_size 45<br />
       --learning_rate 0.005<br />
       --dataset caltech101<br />
+## Task List:</br>
+- [ ] Implement new KT technique on VGG16 teacher-Student model
+- [ ] Implement new KT technique on mobilenet teacher-Student model
 
 
+## Pre-Trained Weights </br>
 
-vgg16.npy can be downloaded from here:ftp://mi.eng.cam.ac.uk/pub/mttt2/models/vgg16.npy
-vgg16.npz can be downloaded from here: https://www.cs.toronto.edu/~frossard/vgg16/vgg16_weights.npz
+vgg16.npy can be downloaded from here [VGG16 Weights] (ftp://mi.eng.cam.ac.uk/pub/mttt2/models/vgg16.npy)
+vgg16.npz can be downloaded from here [VGG16 Weights] (https://www.cs.toronto.edu/~frossard/vgg16/vgg16_weights.npz)
