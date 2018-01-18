@@ -4,7 +4,6 @@ import random
 from DataInput import DataInput
 from mobilenetmentee import Mentee
 from mobilenetmentor import Mentor
-from student import Mentee
 from embed import Embed
 import os
 import pdb
@@ -13,6 +12,7 @@ from tensorflow.python import debug as tf_debug
 from tensorflow.contrib.learn.python.learn.datasets.mnist import read_data_sets
 from tensorflow.contrib.keras.python.keras.losses import sparse_categorical_crossentropy
 import argparse
+from tensorflow.contrib.keras.python.keras.preprocessing.image import ImageDataGenerator
 dataset_path = "./"
 tf.reset_default_graph()
 NUM_ITERATIONS = 100000
@@ -21,7 +21,24 @@ LEARNING_RATE_DECAY_FACTOR = 0.9809
 NUM_EPOCHS_PER_DECAY = 1.0
 validation_accuracy_list = []
 test_accuracy_list = []
-seed = 123456
+seed = 1234
+
+def load_and_preprocess_data():
+    datagen = ImageDataGenerator(
+            featurewise_center = False, 
+            samplewise_center = False,
+            featurewise_std_normalization = False,
+            samplewise_std_normalization=False,
+            zca_whitening=False,
+            rotation_range=0,
+            width_shift_range=0.1,
+            height_shift_range=0.1,
+            horizontal_flip = True,
+            vertical_flip = False
+            )
+
+    return datagen
+
 def read_mnist_data():
     mnist = read_data_sets(FLAGS.mnist_data_dir)
     return mnist      
@@ -31,12 +48,12 @@ def placeholder_inputs(batch_size):
 								shape=(FLAGS.batch_size, FLAGS.image_height, 
 									   FLAGS.image_width, FLAGS.num_channels))
 	labels_placeholder = tf.placeholder(tf.int32,
-								shape=(FLAGS.batch_size))
+								shape=(FLAGS.batch_size, FLAGS.num_classes))
 
 	return images_placeholder, labels_placeholder
 
-def fill_feed_dict(data_input, images_pl, labels_pl, sess, mode, phase_train):
-	images_feed, labels_feed = sess.run([data_input.example_batch, data_input.label_batch])
+def fill_feed_dict(data_input, images_pl, labels_pl, sess, mode, phase_train, images_feed, labels_feed):
+	
     
         if mode == 'Train':
 	    feed_dict = {
@@ -71,19 +88,39 @@ def do_eval(sess,
         if mode == 'Test':
 	    steps_per_epoch = FLAGS.num_testing_examples //FLAGS.batch_size 
 	    num_examples = steps_per_epoch * FLAGS.batch_size
+        if mode == 'Train':
+	    steps_per_epoch = FLAGS.num_training_examples //FLAGS.batch_size 
+	    num_examples = steps_per_epoch * FLAGS.batch_size
         if mode == 'Validation':
 	    steps_per_epoch = FLAGS.num_validation_examples //FLAGS.batch_size 
 	    num_examples = steps_per_epoch * FLAGS.batch_size
-
-	for step in xrange(steps_per_epoch):
-            if FLAGS.dataset == 'mnist':
-                feed_dict = {images_placeholder: np.reshape(dataset.test.next_batch(FLAGS.batch_size)[0], [FLAGS.batch_size, FLAGS.image_width, FLAGS.image_height, FLAGS.num_channels]), labels_placeholder: dataset.test.next_batch(FLAGS.batch_size)[1]}
-            else:
-	        feed_dict = fill_feed_dict(dataset, images_placeholder,
-			    				labels_placeholder,sess, mode,phase_train)
-
-	    count = sess.run(eval_correct, feed_dict=feed_dict)
-	    true_count = true_count + count
+        datagen = load_and_preprocess_data()
+        batches = 0
+        if mode == 'Train':
+	    for (images, labels) in datagen.flow_from_directory('caltech101_train', target_size=(FLAGS.image_width, FLAGS.image_height), batch_size = FLAGS.batch_size):
+                batches = batches + 1
+                if FLAGS.dataset == 'mnist':
+                    feed_dict = {images_placeholder: np.reshape(dataset.test.next_batch(FLAGS.batch_size)[0], [FLAGS.batch_size, FLAGS.image_width, FLAGS.image_height, FLAGS.num_channels]), labels_placeholder: dataset.test.next_batch(FLAGS.batch_size)[1]}
+                else:
+	            feed_dict = fill_feed_dict(dataset, images_placeholder,
+			    				labels_placeholder,sess, mode,phase_train, images, labels)
+	        count = sess.run(eval_correct, feed_dict=feed_dict)
+	        true_count = true_count + count
+            
+                if batches >= int(FLAGS.num_training_examples//FLAGS.batch_size):
+                    break
+        if mode == 'Test':
+	    for (images, labels) in datagen.flow_from_directory('caltech101_test', target_size=(FLAGS.image_width, FLAGS.image_height), batch_size = FLAGS.batch_size):
+                batches = batches + 1
+                if FLAGS.dataset == 'mnist':
+                    feed_dict = {images_placeholder: np.reshape(dataset.test.next_batch(FLAGS.batch_size)[0], [FLAGS.batch_size, FLAGS.image_width, FLAGS.image_height, FLAGS.num_channels]), labels_placeholder: dataset.test.next_batch(FLAGS.batch_size)[1]}
+                else:
+	            feed_dict = fill_feed_dict(dataset, images_placeholder,
+			    				labels_placeholder,sess, mode,phase_train, images, labels)
+	        count = sess.run(eval_correct, feed_dict=feed_dict)
+	        true_count = true_count + count
+                if batches >= int(FLAGS.num_testing_examples//FLAGS.batch_size):
+                    break
 
 	precision = float(true_count) / num_examples
 	print ('  Num examples: %d, Num correct: %d, Precision @ 1: %0.04f' %
@@ -94,8 +131,14 @@ def do_eval(sess,
             test_accuracy_list.append(precision)
 
 def evaluation(logits, labels):
+        
+        zero = tf.constant(0, dtype=tf.int32)
+        non_zero = tf.not_equal(labels, zero)
+        indices = tf.where(non_zero)
+        labels = indices[:, 1]
+        
 	correct = tf.nn.in_top_k(logits, labels, 1)
-	pred = tf.argmax(logits, 1)
+	#pred = tf.argmax(logits, 1)
 	return tf.reduce_sum(tf.cast(correct, tf.int32))
 
 def get_mentor_variables_to_restore(variables_to_restore):
@@ -334,14 +377,15 @@ def train_op_for_single_optimizer(lr, loss, l1, l2, l3, l4, l5, l6, l7, l8, l9, 
 def main(_):
 
 	with tf.Graph().as_default():
+                datagen = load_and_preprocess_data()
                	if FLAGS.dataset == 'mnist':
                     mnist = read_mnist_data()
                 tf.set_random_seed(seed)
 
-		data_input_train = DataInput(dataset_path, FLAGS.train_dataset, FLAGS.batch_size, FLAGS.num_training_examples, FLAGS.image_width, FLAGS.image_height, FLAGS.num_channels, seed)
+		data_input_train = DataInput(dataset_path, FLAGS.train_dataset, FLAGS.batch_size, FLAGS.num_training_examples, FLAGS.image_width, FLAGS.image_height, FLAGS.num_channels, seed, FLAGS.dataset)
 
-		data_input_test = DataInput(dataset_path, FLAGS.test_dataset,FLAGS.batch_size, FLAGS.num_testing_examples, FLAGS.image_width, FLAGS.image_height, FLAGS.num_channels, seed)
-		data_input_validation = DataInput(dataset_path, FLAGS.validation_dataset,FLAGS.batch_size, FLAGS.num_validation_examples, FLAGS.image_width, FLAGS.image_height, FLAGS.num_channels, seed)
+		data_input_test = DataInput(dataset_path, FLAGS.test_dataset,FLAGS.batch_size, FLAGS.num_testing_examples, FLAGS.image_width, FLAGS.image_height, FLAGS.num_channels, seed, FLAGS.dataset)
+		data_input_validation = DataInput(dataset_path, FLAGS.validation_dataset,FLAGS.batch_size, FLAGS.num_validation_examples, FLAGS.image_width, FLAGS.image_height, FLAGS.num_channels, seed, FLAGS.dataset)
 		images_placeholder, labels_placeholder = placeholder_inputs(FLAGS.batch_size)
 		sess = tf.Session()
                 
@@ -360,14 +404,14 @@ def main(_):
                         mentor = Mentor()
                     num_batches_per_epoch = FLAGS.NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN / FLAGS.batch_size
                     decay_steps = int(num_batches_per_epoch * NUM_EPOCHS_PER_DECAY)
-                    data_dict_mentor = mentor.build(images_placeholder, FLAGS.teacher_alpha, phase_train, FLAGS.num_classes,FLAGS.num_channels, seed, True)
+                    data_dict_mentor = mentor.build(FLAGS.teacher_alpha, images_placeholder,FLAGS.num_classes)
                     loss = mentor.loss(labels_placeholder)
                     lr = tf.train.exponential_decay(FLAGS.learning_rate,global_step, decay_steps,LEARNING_RATE_DECAY_FACTOR,staircase=True)
                     if FLAGS.dataset == 'caltech101':
                         train_op = mentor.training(loss, lr, global_step)
                     if FLAGS.dataset == 'cifar10':
                         train_op = mentor.training(loss, lr, global_step)
-                    softmax = data_dict_mentor['conv20']
+                    softmax = data_dict_mentor.conv22
                     init = tf.global_variables_initializer()
                     sess.run(init)
                     saver = tf.train.Saver()
@@ -378,6 +422,7 @@ def main(_):
                     num_batches_per_epoch = FLAGS.NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN / FLAGS.batch_size
                     decay_steps = int(num_batches_per_epoch * NUM_EPOCHS_PER_DECAY)
                     data_dict = student.build(FLAGS.student_alpha, images_placeholder, FLAGS.num_classes)
+                    #data_dict = student.build(images_placeholder,FLAGS.student_alpha, phase_train, FLAGS.num_classes, FLAGS.num_channels, seed, True)
                     loss = student.loss(labels_placeholder)
                     lr = tf.train.exponential_decay(FLAGS.learning_rate,global_step, decay_steps,LEARNING_RATE_DECAY_FACTOR,staircase=True)
                     train_op = student.training(loss,lr, global_step)
@@ -416,101 +461,112 @@ def main(_):
 		eval_correct= evaluation(softmax, labels_placeholder)
                 count = 0
 		try:
-			for i in range(NUM_ITERATIONS):
-                                count = count + 1
-				feed_dict = fill_feed_dict(data_input_train, images_placeholder,
-								labels_placeholder, sess, 'Train', phase_train)
-                                if FLAGS.student or FLAGS.teacher:
-				    _, loss_value = sess.run([train_op, loss], feed_dict=feed_dict)
-                                    if FLAGS.dataset == 'mnist':
-                                        batch = mnist.train.next_batch(FLAGS.batch_size)
-                                        _, loss_value = sess.run([train_op, loss], feed_dict = {images_placeholder: np.reshape(batch[0], [FLAGS.batch_size, FLAGS.image_height, FLAGS.image_width, FLAGS.num_channels]), labels_placeholder: batch[1]})
-
-				    if i % 10 == 0:
-					print ('Step %d: loss_value = %.20f' % (i, loss_value))
-
-                                if FLAGS.dependent_student and FLAGS.single_optimizer:
-                                    
-                                    loss_value = calculate_loss_with_single_optimizer(train_op, loss, feed_dict, sess)
-				    if i % 10 == 0:
-					print ('Step %d: loss_value = %.20f' % (i, loss_value))
-                                if FLAGS.dependent_student and FLAGS.multiple_optimizers:
-
-                                    loss_value0, loss_value1, loss_value2, loss_value3, loss_value4, loss_value5, loss_value6, loss_value7, loss_value8, loss_value9, loss_value10, loss_value11, loss_value12, loss_value13, loss_value14, loss_value15 = calculate_loss_with_multiple_optimizers(train_op0, loss, train_op1, embed.loss_embed_1, train_op2, embed.loss_embed_2, train_op3, embed.loss_embed_3, train_op4, embed.loss_embed_4, train_op5, embed.loss_embed_5, train_op6, embed.loss_embed_6, train_op7, embed.loss_embed_7, train_op8, embed.loss_embed_8, train_op9, embed.loss_embed_9, train_op10, embed.loss_embed_10, train_op11, embed.loss_embed_11, train_op12, embed.loss_embed_12, train_op13, embed.loss_embed_13, train_op14, embed.loss_embed_14, train_op15, embed.loss_embed_15, feed_dict, sess)
-				    
-                                    if i % 10 == 0:
-					print ('Step %d: loss_value0 = %.20f' % (i, loss_value0))
-					print ('Step %d: loss_value1 = %.20f' % (i, loss_value1))
-					print ('Step %d: loss_value2 = %.20f' % (i, loss_value2))
-                                        """
-					print ('Step %d: loss_value3 = %.20f' % (i, loss_value3))
-					print ('Step %d: loss_value4 = %.20f' % (i, loss_value4))
-					print ('Step %d: loss_value5 = %.20f' % (i, loss_value5))
-					print ('Step %d: loss_value6 = %.20f' % (i, loss_value6))
-                                        """
-					#summary_str = sess.run(summary, feed_dict=feed_dict)
-					#summary_writer.add_summary(summary_str, i)
-					#summary_writer.flush()
-				if (i) %(FLAGS.NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN//FLAGS.batch_size)  == 0 or (i) == NUM_ITERATIONS:
-					
-                                        checkpoint_file = os.path.join(SUMMARY_LOG_DIR, 'model.ckpt')
-                                        if FLAGS.teacher:
-                                            saver.save(sess, FLAGS.teacher_weights_filename)
-
-                                        elif FLAGS.student:
-                                            saver.save(sess, FLAGS.student_filename)
-                                        """
-                                        print sess.run(cosine1, feed_dict = feed_dict)
-                                        print sess.run(cosine2, feed_dict = feed_dict)
-                                        print sess.run(cosine3, feed_dict = feed_dict)
-                                        print sess.run(cosine4, feed_dict = feed_dict)
-                                        print sess.run(cosine5, feed_dict = feed_dict)
-                                        print sess.run(cosine6, feed_dict = feed_dict)
-                                        print sess.run(cosine7, feed_dict = feed_dict)
-                                        print sess.run(cosine8, feed_dict = feed_dict)
-                                        print sess.run(cosine9, feed_dict = feed_dict)
-                                        print sess.run(cosine10, feed_dict = feed_dict)
-                                        print sess.run(cosine11, feed_dict = feed_dict)
-                                        print sess.run(cosine12, feed_dict = feed_dict)
-                                        print sess.run(cosine13, feed_dict = feed_dict)
-                                        """
+			for j in range(NUM_ITERATIONS):
+                                batches = 0
+                                i = 0
+                                for (images, labels) in datagen.flow_from_directory('caltech101_train', target_size = (FLAGS.image_width, FLAGS.image_height), batch_size = FLAGS.batch_size):
+                                    i = i + 1
+                                    batches = batches + 1
+                                    count = count + 1
+                                    feed_dict = fill_feed_dict(data_input_train, images_placeholder,
+                                                                    labels_placeholder, sess, 'Train', phase_train, images, labels)
+                                    if FLAGS.student or FLAGS.teacher:
+                                        _, loss_value = sess.run([train_op, loss], feed_dict=feed_dict)
                                         if FLAGS.dataset == 'mnist':
-                                            print('validation accuracy::MNIST')
-                                            do_eval(sess, 
-                                                    eval_correct,
-                                                    softmax,
-                                                    images_placeholder,
-                                                    labels_placeholder,
-                                                    mnist, 
-                                                    'Validation', phase_train)
+                                            batch = mnist.train.next_batch(FLAGS.batch_size)
+                                            _, loss_value = sess.run([train_op, loss], feed_dict = {images_placeholder: np.reshape(batch[0], [FLAGS.batch_size, FLAGS.image_height, FLAGS.image_width, FLAGS.num_channels]), labels_placeholder: batch[1]})
 
-                                            print('test accuracy::MNIST')
-                                            do_eval(sess, 
-                                                    eval_correct,
-                                                    softmax,
-                                                    images_placeholder,
-                                                    labels_placeholder,
-                                                    mnist, 
-                                                    'Test', phase_train)
+                                        if i % 10 == 0:
+                                            print ('Step %d: loss_value = %.20f' % (i, loss_value))
+
+                                    if FLAGS.dependent_student and FLAGS.single_optimizer:
+                                        
+                                        loss_value = calculate_loss_with_single_optimizer(train_op, loss, feed_dict, sess)
+                                        if i % 10 == 0:
+                                            print ('Step %d: loss_value = %.20f' % (i, loss_value))
+                                    if FLAGS.dependent_student and FLAGS.multiple_optimizers:
+
+                                        loss_value0, loss_value1, loss_value2, loss_value3, loss_value4, loss_value5, loss_value6, loss_value7, loss_value8, loss_value9, loss_value10, loss_value11, loss_value12, loss_value13, loss_value14, loss_value15 = calculate_loss_with_multiple_optimizers(train_op0, loss, train_op1, embed.loss_embed_1, train_op2, embed.loss_embed_2, train_op3, embed.loss_embed_3, train_op4, embed.loss_embed_4, train_op5, embed.loss_embed_5, train_op6, embed.loss_embed_6, train_op7, embed.loss_embed_7, train_op8, embed.loss_embed_8, train_op9, embed.loss_embed_9, train_op10, embed.loss_embed_10, train_op11, embed.loss_embed_11, train_op12, embed.loss_embed_12, train_op13, embed.loss_embed_13, train_op14, embed.loss_embed_14, train_op15, embed.loss_embed_15, feed_dict, sess)
+                                        
+                                        if i % 10 == 0:
+                                            print ('Step %d: loss_value0 = %.20f' % (i, loss_value0))
+                                            print ('Step %d: loss_value1 = %.20f' % (i, loss_value1))
+                                            print ('Step %d: loss_value2 = %.20f' % (i, loss_value2))
+                                            """
+                                            print ('Step %d: loss_value3 = %.20f' % (i, loss_value3))
+                                            print ('Step %d: loss_value4 = %.20f' % (i, loss_value4))
+                                            print ('Step %d: loss_value5 = %.20f' % (i, loss_value5))
+                                            print ('Step %d: loss_value6 = %.20f' % (i, loss_value6))
+                                            """
+                                            #summary_str = sess.run(summary, feed_dict=feed_dict)
+                                            #summary_writer.add_summary(summary_str, i)
+                                            #summary_writer.flush()
+                                    if (i) %(FLAGS.NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN//FLAGS.batch_size)  == 0 or (i) == NUM_ITERATIONS:
                                             
-                                        else:
-                                            print ("Validation Data Eval:")
-                                            do_eval(sess, 
-                                                    eval_correct,
-                                                    softmax,
-                                                    images_placeholder,
-                                                    labels_placeholder,
-                                                    data_input_validation, 
-                                                    'Validation', phase_train)
-                                            print ("Test  Data Eval:")
-                                            do_eval(sess, 
-                                                    eval_correct,
-                                                    softmax,
-                                                    images_placeholder,
-                                                    labels_placeholder,
-                                                    data_input_test, 
-                                                    'Test', phase_train)
-                            
+                                            checkpoint_file = os.path.join(SUMMARY_LOG_DIR, 'model.ckpt')
+                                            if FLAGS.teacher:
+                                                saver.save(sess, FLAGS.teacher_weights_filename)
+
+                                            elif FLAGS.student:
+                                                saver.save(sess, FLAGS.student_filename)
+                                            """
+                                            print sess.run(cosine1, feed_dict = feed_dict)
+                                            print sess.run(cosine2, feed_dict = feed_dict)
+                                            print sess.run(cosine3, feed_dict = feed_dict)
+                                            print sess.run(cosine4, feed_dict = feed_dict)
+                                            print sess.run(cosine5, feed_dict = feed_dict)
+                                            print sess.run(cosine6, feed_dict = feed_dict)
+                                            print sess.run(cosine7, feed_dict = feed_dict)
+                                            print sess.run(cosine8, feed_dict = feed_dict)
+                                            print sess.run(cosine9, feed_dict = feed_dict)
+                                            print sess.run(cosine10, feed_dict = feed_dict)
+                                            print sess.run(cosine11, feed_dict = feed_dict)
+                                            print sess.run(cosine12, feed_dict = feed_dict)
+                                            print sess.run(cosine13, feed_dict = feed_dict)
+                                            """
+                                            if FLAGS.dataset == 'mnist':
+                                                print('validation accuracy::MNIST')
+                                                do_eval(sess, 
+                                                        eval_correct,
+                                                        softmax,
+                                                        images_placeholder,
+                                                        labels_placeholder,
+                                                        mnist, 
+                                                        'Validation', phase_train)
+
+                                                print('test accuracy::MNIST')
+                                                do_eval(sess, 
+                                                        eval_correct,
+                                                        softmax,
+                                                        images_placeholder,
+                                                        labels_placeholder,
+                                                        mnist, 
+                                                        'Test', phase_train)
+                                                
+                                            else:
+                                                print ("Training Data Eval:")
+                                                
+                                                do_eval(sess, 
+                                                        eval_correct,
+                                                        softmax,
+                                                        images_placeholder,
+                                                        labels_placeholder,
+                                                        data_input_train, 
+                                                        'Train', phase_train)
+                                                
+                                                
+                                                print ("Test  Data Eval:")
+                                                do_eval(sess, 
+                                                        eval_correct,
+                                                        softmax,
+                                                        images_placeholder,
+                                                        labels_placeholder,
+                                                        data_input_test, 
+                                                        'Test', phase_train)
+                                                
+                                    if batches >= int(FLAGS.num_training_examples // FLAGS.batch_size):
+                                        break
+                                
 			coord.request_stop()
 			coord.join(threads)
 		except Exception as e:
@@ -610,17 +666,17 @@ if __name__ == '__main__':
         parser.add_argument(
             '--NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN',
             type = int,
-            default = 5853                                    
+            default = 8186                                   
         )
         parser.add_argument(
             '--num_training_examples',
             type = int,
-            default = 5853                                    
+            default = 8186                                    
         )
         parser.add_argument(
             '--num_testing_examples',
             type = int,
-            default = 1829                                    
+            default = 958                                    
         )
         parser.add_argument(
             '--num_validation_examples',
@@ -661,7 +717,7 @@ if __name__ == '__main__':
             '--student_alpha',
             type = float,
             help = 'width_multiplier',
-            default =1.0
+            default =0.1
         )
         parser.add_argument(
             '--num_channels',
