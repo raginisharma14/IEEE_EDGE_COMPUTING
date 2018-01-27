@@ -54,9 +54,9 @@ class DataInput(object):
                 if self.dataset == 'cifar10':
 
 		    self.train_image = tf.image.decode_png(file_content, channels=self.num_channels)
-                    self.train_image = tf.random_crop(self.train_image, [self.image_height, self.image_width])
+                    #self.train_image = tf.random_crop(self.train_image, [self.image_height, self.image_width])
                     distorted_image = tf.image.random_flip_left_right(self.train_image)
-                    distorted_image = tf.image.random_brightness(distorted_image, max_delta=63)
-                    distorted_image = tf.image.random_contrast(distorted_image, lower=0.2, upper=1.8)
+                    #distorted_image = tf.image.random_brightness(distorted_image, max_delta=63)
+                    #distorted_image = tf.image.random_contrast(distorted_image, lower=0.2, upper=1.8)
                     self.train_image = tf.image.per_image_standardization(distorted_image)
 		    self.train_image = tf.image.resize_images(self.train_image, [self.image_width, self.image_height])

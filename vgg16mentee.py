@@ -4,7 +4,8 @@ from tensorflow.python.framework import dtypes
 import random
 import pdb
 import numpy as np
-
+from tensorflow.contrib.keras.python.keras.layers import BatchNormalization
+from tensorflow.contrib.keras.python.keras import backend as K
 VGG_MEAN = [103.939, 116.779, 123.68]
 class Mentee(object):
 
@@ -16,8 +17,9 @@ class Mentee(object):
                 
 
 	def build(self, rgb, num_classes, temp_softmax, seed,train_mode):
-
-		# conv1_1
+                
+                K.set_learning_phase(True)
+    		# conv1_1
 		with tf.name_scope('mentee_conv1_1') as scope:
 			kernel = tf.Variable(tf.truncated_normal([3, 3, self.num_channels, 64], dtype=tf.float32,
 													 stddev=1e-2, seed = seed), trainable = True, name='mentee_weights')
@@ -25,14 +27,15 @@ class Mentee(object):
 			biases = tf.Variable(tf.constant(0.0, shape=[64], dtype=tf.float32),
 								 trainable=True, name='mentee_biases')
 			out = tf.nn.bias_add(conv, biases)
-                        #out = tf.contrib.layers.batch_norm(out,  decay=0.999,
-                         #           center=True,
-                          #              scale=False,
-                           #             updates_collections= None, is_training= train_mode)
+                        out = tf.contrib.layers.batch_norm(out,  decay=0.999,
+                                    center=True,
+                                        scale=False,
+                                        updates_collections= None, is_training= train_mode)
  #                       mean, var = tf.nn.moments(out, axes=[0])
                         #out = tf.nn.batch_normalization(out, mean, var)
                         #out = (out - mean) / tf.sqrt(var + tf.constant(1e-10))
 			self.conv1_1 = tf.nn.relu(out, name=scope)
+                        self.conv1_1 = BatchNormalization(axis = -1, name= 'mentee_bn_conv1_1')(self.conv1_1)
 			self.parameters += [kernel, biases]
 			
 		self.pool1 = tf.nn.max_pool(self.conv1_1,
@@ -56,6 +59,7 @@ class Mentee(object):
                         #out = (out - mean) / tf.sqrt(var + tf.constant(1e-10))
                         #out = tf.nn.batch_normalization(out, mean, var)
 			self.conv2_1 = tf.nn.relu(out, name=scope)
+                        self.conv2_1 = BatchNormalization(axis = -1, name= 'mentee_bn_conv2_1')(self.conv2_1)
 			self.parameters += [kernel, biases]
 
 		self.pool2 = tf.nn.max_pool(self.conv2_1,
@@ -78,6 +82,7 @@ class Mentee(object):
                         #out = tf.nn.batch_normalization(out, mean, var)
                         #out = (out - mean) / tf.sqrt(var + tf.constant(1e-10))
 			self.conv3_1 = tf.nn.relu(out, name=scope)
+                        self.conv3_1 = BatchNormalization(axis = -1, name= 'mentee_bn_conv3_1')(self.conv3_1)
 			self.parameters += [kernel, biases]
 
 		self.pool3 = tf.nn.max_pool(self.conv3_1,
@@ -101,6 +106,7 @@ class Mentee(object):
                         #out = tf.nn.batch_normalization(out, mean, var)
                         #out = (out - mean) / tf.sqrt(var + tf.constant(1e-10))
 			self.conv4_1 = tf.nn.relu(out, name=scope)
+                        self.conv4_1 = BatchNormalization(axis = -1, name= 'mentee_bn_conv4_1')(self.conv4_1)
 			self.parameters += [kernel, biases]
 
 		self.pool4 = tf.nn.max_pool(self.conv4_1,
@@ -123,6 +129,7 @@ class Mentee(object):
                         #out = tf.nn.batch_normalization(out, mean, var)
                         #out = (out - mean) / tf.sqrt(var + tf.constant(1e-10))
 			self.conv5_1 = tf.nn.relu(out, name=scope)
+                        self.conv5_1 = BatchNormalization(axis = -1, name= 'mentee_bn_conv5_1')(self.conv5_1)
 			self.parameters += [kernel, biases]
 		
                 self.pool5 = tf.nn.max_pool(self.conv5_1,
@@ -145,6 +152,7 @@ class Mentee(object):
                         #out = tf.nn.batch_normalization(out, mean, var)
                         #out = (out - mean) / tf.sqrt(var + tf.constant(1e-10))
 			self.conv6_1 = tf.nn.relu(out, name=scope)
+                        self.conv6_1 = BatchNormalization(axis = -1, name= 'mentee_bn_conv6_1')(self.conv6_1)
 			self.parameters += [kernel, biases]
 		
                 self.pool6 = tf.nn.max_pool(self.conv6_1,
@@ -169,6 +177,7 @@ class Mentee(object):
                         #mean, var = tf.nn.moments(fc1l, axes=[0])
                         #fc1l = (fc1l - mean) / tf.sqrt(var + tf.constant(1e-10))
 			self.fc1 = tf.nn.relu(fc1l)
+                        self.fc1 = BatchNormalization(axis = -1, name= 'mentee_bn_fc1')(self.fc1)
   #                      if train_mode == True:
    #                         print("Traine_mode is true")
     #                        self.fc1 = tf.nn.dropout(self.fc1, 0.5, seed = seed)
@@ -188,6 +197,7 @@ class Mentee(object):
                         #fc2l = tf.nn.batch_normalization(out, mean, var)
                         #fc2l = (fc2l - mean) / tf.sqrt(var + tf.constant(1e-10))
 			self.fc2 = tf.nn.relu(fc2l)
+                        self.fc2 = BatchNormalization(axis = -1, name= 'mentee_bn_fc2')(self.fc2)
                         if train_mode == True:
                             self.fc2 = tf.nn.dropout(self.fc2, 0.5, seed = seed)
 			self.parameters += [fc2w, fc2b]
