@@ -23,11 +23,13 @@ from tensorflow.contrib.keras.python.keras.models import Sequential
 import pdb
 depth_multiplier = 1
 class Mentee(object):
+    def __init__(self, num_classes):
+        self.num_classes = num_classes
 
     def relu6(self, x):
         return K.relu(x, max_value=6)
 
-    def build(self,alpha, img_input, num_classes):
+    def build(self,alpha, img_input):
 
         shape = (1, 1, int(1024 * alpha))
 	"""
@@ -66,9 +68,9 @@ class Mentee(object):
             self.conv18 = Reshape(shape, name='student_reshape_1')(self.conv17)
 	
             self.conv19 = Dropout(0.5, name='student_dropout')(self.conv18)
-            self.conv20 = Conv2D(num_classes, (1, 1), padding='same', name='student_conv_preds')(self.conv18)
+            self.conv20 = Conv2D(self.num_classes, (1, 1), padding='same', name='student_conv_preds')(self.conv18)
             self.conv21 = Activation('softmax', name='student_act_softmax')(self.conv20)
-            self.conv22 = Reshape((num_classes,), name='student_reshape_2')(self.conv21)
+            self.conv22 = Reshape((self.num_classes,), name='student_reshape_2')(self.conv21)
 
         return self
     def loss(self, labels):
@@ -76,7 +78,9 @@ class Mentee(object):
         """
             softmax cross entropy with logits takes logits as input instead of probabilities. check the input for caution.
         """
-        cross_entropy = tf.nn.softmax_cross_entropy_with_logits(labels = labels, logits = self.conv20, name='xentropy')
+        logits = Reshape((self.num_classes,), name='student_reshape_3')(self.conv20)
+
+        cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(labels = labels, logits = logits, name='xentropy')
         return tf.reduce_mean(cross_entropy, name='xentropy_mean')
 
     def training(self, loss, lr, global_step):

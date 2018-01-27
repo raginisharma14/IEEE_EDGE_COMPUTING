@@ -5,6 +5,7 @@ from DataInput import DataInput
 from vgg16mentee import Mentee
 from vgg16mentor import Mentor
 #from embed import Embed
+from mentor import Teacher
 import os
 import pdb
 import sys
@@ -95,8 +96,13 @@ class VGG16(object):
                 test_accuracy_list.append(precision)
 
     def evaluation(self, logits, labels):
-            correct = tf.nn.in_top_k(logits, labels, 1)
-            pred = tf.argmax(logits, 1)
+            if FLAGS.top_1_accuracy: 
+                correct = tf.nn.in_top_k(logits, labels, 1)
+            elif FLAGS.top_3_accuracy:
+                correct = tf.nn.in_top_k(logits, labels, 3)
+            elif FLAGS.top_5_accuracy:
+                correct = tf.nn.in_top_k(logits, labels, 5)
+
             return tf.reduce_sum(tf.cast(correct, tf.int32))
 
     def get_mentor_variables_to_restore(self, variables_to_restore):
@@ -214,7 +220,7 @@ class VGG16(object):
 
         return cosine1, cosine2, cosine3, cosine4, cosine5, cosine6, cosine7, cosine8, cosine9, cosine10, cosine11, cosine12, cosine13
 
-    def rmse_loss(self, mentor_conv1_2, mentee_conv1_1, mentee_conv2_1, mentor_conv2_2, mentor_conv3_1,mentee_conv3_1,mentor_conv4_3,mentee_conv4_1, mentor_conv5_2,mentee_conv5_1, logits_mentor, logits_mentee):
+    def rmse_loss(self, mentor_conv1_2, mentee_conv1_1, mentee_conv2_1, mentor_conv2_2, mentor_conv3_1,mentee_conv3_1,mentor_conv4_3,mentee_conv4_1, mentor_conv5_2,mentee_conv5_1, logits_mentor, logits_mentee, softmax_mentor, softmax_mentee):
 
         self.l1 = tf.sqrt(tf.reduce_mean(tf.square(tf.subtract(mentor_conv1_2, mentee_conv1_1))))
         self.l2 = tf.sqrt(tf.reduce_mean(tf.square(tf.subtract(mentor_conv2_2, mentee_conv2_1))))
@@ -222,6 +228,7 @@ class VGG16(object):
         self.l4 = tf.sqrt(tf.reduce_mean(tf.square(tf.subtract(mentor_conv4_3, mentee_conv4_1))))
         self.l5 = tf.sqrt(tf.reduce_mean(tf.square(tf.subtract(mentor_conv5_2, mentee_conv5_1))))
         self.l6 = tf.sqrt(tf.reduce_mean(tf.square(tf.subtract(logits_mentor, logits_mentee))))
+        self.l7 = tf.sqrt(tf.reduce_mean(tf.square(tf.subtract(softmax_mentor, softmax_mentee))))
 
 
 
@@ -324,6 +331,11 @@ class VGG16(object):
             self.train_op = tf.train.AdamOptimizer(lr).minimize(loss + l1 + l2 + l3 + l4 + l5)
         if FLAGS.single_optimizer_l6:
             self.train_op = tf.train.AdamOptimizer(lr).minimize(loss + l1 + l2 + l3 + l4 + l5 + l6)
+        if FLAGS.single_optimizer_last_layer:
+            self.train_op = tf.train.AdamOptimizer(lr).minimize(loss + l6)
+
+        if FLAGS.single_optimizer_last_layer_with_temp_softmax:
+            self.train_op = tf.train.AdamOptimizer(lr).minimize(loss + self.l7)
 
 
     def main(self, _):
@@ -352,22 +364,22 @@ class VGG16(object):
                     if FLAGS.teacher:
                         if FLAGS.dataset == 'cifar10' or 'mnist':
                             print("Teacher")
-                            mentor = Mentor()
+                            mentor = Teacher()
                         if FLAGS.dataset == 'caltech101':
                             mentor = Mentor()
                         num_batches_per_epoch = FLAGS.NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN / FLAGS.batch_size
                         decay_steps = int(num_batches_per_epoch * NUM_EPOCHS_PER_DECAY)
-                        mentor.build(images_placeholder, FLAGS.num_classes, FLAGS.temp_softmax, phase_train)
+                        _,_,_,_,_,_,_,_,_,_,_,_,_,_,softmax_mentor = mentor.build(images_placeholder, FLAGS.num_classes, FLAGS.temp_softmax, phase_train)
                         loss = mentor.loss(labels_placeholder)
                         lr = tf.train.exponential_decay(FLAGS.learning_rate,global_step, decay_steps,LEARNING_RATE_DECAY_FACTOR,staircase=True)
-                        variables_to_restore = []
-                        variables_to_restore = self.get_mentor_variables_to_restore(variables_to_restore)
                         if FLAGS.dataset == 'caltech101':
+                            variables_to_restore = []
+                            variables_to_restore = self.get_mentor_variables_to_restore(variables_to_restore)
                             self.train_op = mentor.training(loss, FLAGS.learning_rate_pretrained,lr, global_step, variables_to_restore,mentor.get_training_vars())
                         if FLAGS.dataset == 'cifar10':
                             #train_op = mentor.training(loss, lr, global_step)
-                            self.train_op = mentor.training(loss, FLAGS.learning_rate_pretrained,lr, global_step, variables_to_restore,mentor.get_training_vars())
-                        softmax = mentor.fc3l
+                            self.train_op = mentor.training(loss, FLAGS.learning_rate, global_step)
+                        softmax = softmax_mentor
                         init = tf.global_variables_initializer()
                         sess.run(init)
                         saver = tf.train.Saver()
@@ -407,7 +419,7 @@ class VGG16(object):
                         mentor_variables_to_restore = []
                         mentor_variables_to_restore = self.get_mentor_variables_to_restore(mentor_variables_to_restore)
                         loss = vgg16_mentee.loss(labels_placeholder)
-                        self.rmse_loss(mentor_conv1_2, mentee_conv1_1, mentee_conv2_1,mentor_conv2_2, mentor_conv3_1,mentee_conv3_1,mentor_conv4_3,mentee_conv4_1, mentor_conv5_2,mentee_conv5_1, logits_mentor, logits_mentee)
+                        self.rmse_loss(mentor_conv1_2, mentee_conv1_1, mentee_conv2_1,mentor_conv2_2, mentor_conv3_1,mentee_conv3_1,mentor_conv4_3,mentee_conv4_1, mentor_conv5_2,mentee_conv5_1, logits_mentor, logits_mentee, softmax_mentor, softmax_mentee)
                         lr = tf.train.exponential_decay(FLAGS.learning_rate,global_step, decay_steps,LEARNING_RATE_DECAY_FACTOR,staircase=True)
                         if FLAGS.single_optimizer:
                             self.train_op_for_single_optimizer(lr, loss, self.l1, self.l2, self.l3, self.l4, self.l5, self.l6)
@@ -731,6 +743,18 @@ if __name__ == '__main__':
             default = False
         )
         parser.add_argument(
+            '--single_optimizer_last_layer',
+            type = bool,
+            help = 'last layer loss from mentor only the logits',
+            default = False
+        )
+        parser.add_argument(
+            '--single_optimizer_last_layer_with_temp_softmax',
+            type = bool,
+            help = 'last layer loss from mentor with temp softmax',
+            default = False
+        )
+        parser.add_argument(
             '--multiple_optimizers_l0',
             type = bool,
             help = 'number of channels in the initial layer if it is RGB it will 3 , if it is gray scale it will be 1',
@@ -770,6 +794,24 @@ if __name__ == '__main__':
             '--multiple_optimizers_l6',
             type = bool,
             help = 'number of channels in the initial layer if it is RGB it will 3 , if it is gray scale it will be 1',
+            default = False
+        )
+        parser.add_argument(
+            '--top_1_accuracy',
+            type = bool,
+            help = 'top-1-accuracy',
+            default = False
+        )
+        parser.add_argument(
+            '--top_3_accuracy',
+            type = bool,
+            help = 'top-3-accuracy',
+            default = False
+        )
+        parser.add_argument(
+            '--top_5_accuracy',
+            type = bool,
+            help = 'top-5-accuracy',
             default = False
         )
 

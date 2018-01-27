@@ -24,10 +24,14 @@ import pdb
 depth_multiplier = 1
 class Mentor(object):
 
+    def __init__(self, trainable, num_classes):
+        self.trainable = trainable
+        self.num_classes = num_classes
+
     def relu6(self, x):
         return K.relu(x, max_value=6)
 
-    def build(self,alpha, img_input, num_classes):
+    def build(self,alpha, img_input):
 
         shape = (1, 1, int(1024 * alpha))
 	"""
@@ -44,9 +48,9 @@ class Mentor(object):
                         padding='same',
                         use_bias=False,
                         strides=(1,1),
-                        name='teacher_conv1')(img_input)
-            self.conv2 = BatchNormalization(axis=-1, name='teacher_conv1_bn')(self.conv1)
-            self.conv3 = Activation(self.relu6, name='teacher_conv1_relu')(self.conv2)
+                        name='teacher_conv1', trainable=self.trainable)(img_input)
+            self.conv2 = BatchNormalization(axis=-1, name='teacher_conv1_bn', trainable=self.trainable)(self.conv1)
+            self.conv3 = Activation(self.relu6, name='teacher_conv1_relu', trainable=self.trainable)(self.conv2)
 
 	    self.conv4 = self._depthwise_conv_block(self.conv3, 64, alpha, depth_multiplier, block_id = 15)
 	    self.conv5 = self._depthwise_conv_block(self.conv4, 128, alpha, depth_multiplier,strides=(2, 2), block_id =16)
@@ -63,12 +67,12 @@ class Mentor(object):
 	    self.conv16 = self._depthwise_conv_block(self.conv15, 1024, alpha, depth_multiplier, block_id =27)
 
             self.conv17 = GlobalAveragePooling2D()(self.conv16)
-            self.conv18 = Reshape(shape, name='teacher_reshape_1')(self.conv17)
+            self.conv18 = Reshape(shape, name='teacher_reshape_1', trainable=self.trainable)(self.conv17)
 	
-            self.conv19 = Dropout(0.5, name='teacher_dropout')(self.conv18)
-            self.conv20 = Conv2D(num_classes, (1, 1), padding='same', name='teacher_conv_preds')(self.conv18)
-            self.conv21 = Activation('softmax', name='teacher_act_softmax')(self.conv20)
-            self.conv22 = Reshape((num_classes,), name='teacher_reshape_2')(self.conv21)
+            self.conv19 = Dropout(0.5, name='teacher_dropout', trainable=self.trainable)(self.conv18)
+            self.conv20 = Conv2D(self.num_classes, (1, 1), padding='same', name='teacher_conv_preds', trainable=self.trainable)(self.conv18)
+            self.conv21 = Activation('softmax', name='teacher_act_softmax', trainable=self.trainable)(self.conv20)
+            self.conv22 = Reshape((self.num_classes,), name='teacher_reshape_2', trainable=self.trainable)(self.conv21)
 
         return self
     def loss(self, labels):
@@ -76,7 +80,9 @@ class Mentor(object):
         """
             softmax cross entropy with logits takes logits as input instead of probabilities. check the input for caution.
         """
-        cross_entropy = tf.nn.softmax_cross_entropy_with_logits(labels = labels, logits = self.conv20, name='xentropy')
+
+        logits = Reshape((self.num_classes,), name='teacher_reshape_3', trainable=self.trainable)(self.conv20)
+        cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(labels = labels, logits = logits, name='xentropy')
         return tf.reduce_mean(cross_entropy, name='xentropy_mean')
 
     def training(self, loss, lr, global_step):
@@ -92,15 +98,15 @@ class Mentor(object):
 			    depth_multiplier=depth_multiplier,
 			    strides=strides,
 			    use_bias=False,
-			    name='teacher_conv_dw_%d' % block_id)(inputs)
-	x = BatchNormalization(axis=-1, name='teacher_conv_dw_%d_bn' % block_id)(x)
-	x = Activation(self.relu6, name='teacher_conv_dw_%d_relu' % block_id)(x)
+			    name='teacher_conv_dw_%d' % block_id, trainable=self.trainable)(inputs)
+	x = BatchNormalization(axis=-1, name='teacher_conv_dw_%d_bn' % block_id, trainable=self.trainable)(x)
+	x = Activation(self.relu6, name='teacher_conv_dw_%d_relu' % block_id, trainable=self.trainable)(x)
 
 	x = Conv2D(pointwise_conv_filters, (1, 1),
 		   padding='same',
 		   use_bias=False,
 		   strides=(1, 1),
-		   name='teacher_conv_pw_%d' % block_id)(x)
-	x = BatchNormalization(axis=-1, name='teacher_conv_pw_%d_bn' % block_id)(x)
-        return Activation(self.relu6, name='teacher_conv_pw_%d_relu' % block_id)(x)
+		   name='teacher_conv_pw_%d' % block_id, trainable=self.trainable)(x)
+	x = BatchNormalization(axis=-1, name='teacher_conv_pw_%d_bn' % block_id, trainable=self.trainable)(x)
+        return Activation(self.relu6, name='teacher_conv_pw_%d_relu' % block_id, trainable=self.trainable)(x)
 
