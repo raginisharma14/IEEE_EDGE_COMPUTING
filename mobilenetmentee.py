@@ -29,7 +29,7 @@ class Mentee(object):
     def relu6(self, x):
         return K.relu(x, max_value=6)
 
-    def build(self,alpha, img_input):
+    def build(self,alpha, img_input, temp_softmax):
 
         shape = (1, 1, int(1024 * alpha))
 	"""
@@ -69,7 +69,7 @@ class Mentee(object):
 	
             self.conv19 = Dropout(0.5, name='student_dropout')(self.conv18)
             self.conv20 = Conv2D(self.num_classes, (1, 1), padding='same', name='student_conv_preds')(self.conv18)
-            self.conv21 = Activation('softmax', name='student_act_softmax')(self.conv20)
+            self.conv21 = Activation('softmax', name='student_act_softmax')(tf.divide(self.conv20, temp_softmax))
             self.conv22 = Reshape((self.num_classes,), name='student_reshape_2')(self.conv21)
 
         return self

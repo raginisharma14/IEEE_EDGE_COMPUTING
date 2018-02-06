@@ -21,6 +21,7 @@ NUM_EPOCHS_PER_DECAY = 1.0
 validation_accuracy_list = []
 test_accuracy_list = []
 seed = 1234
+alpha = 0.2
 class VGG16(object):
     def read_mnist_data(self):
         mnist = read_data_sets(FLAGS.mnist_data_dir)
@@ -171,6 +172,22 @@ class VGG16(object):
         #l6_mentee_weights.append([var for var in tf.global_variables() if var.op.name=="mentee_fc3/mentee_biases"][0])
         return l6_mentee_weights
 
+    def get_variables_for_HT(self, variables_for_HT):
+        
+        variables_for_HT.append([var for var in tf.global_variables() if var.op.name=="mentee_conv3_1/mentee_weights"][0])
+        variables_for_HT.append([var for var in tf.global_variables() if var.op.name=="mentee_conv2_1/mentee_weights"][0])
+
+        variables_for_HT.append([var for var in tf.global_variables() if var.op.name=="mentee_conv1_1/mentee_weights"][0])
+
+        return variables_for_HT
+    
+    def get_variables_for_KD(self, variables_for_KD):
+        #return [var for var in tf.global_variables() if (var.op.name.startswith("mentee") and var.op.name.endswith("weights"))]
+        variables_for_KD.append([var for var in tf.global_variables() if var.op.name=="mentee_conv3_1/mentee_weights"][0])
+        variables_for_KD.append([var for var in tf.global_variables() if var.op.name=="mentee_conv2_1/mentee_weights"][0])
+
+        variables_for_KD.append([var for var in tf.global_variables() if var.op.name=="mentee_conv1_1/mentee_weights"][0])
+        return variables_for_KD
     def cosine_similarity(self, mentee_conv1_1, mentor_conv1_1, mentor_conv1_2, mentee_conv2_1,mentor_conv2_1, mentor_conv2_2,mentee_conv3_1,mentor_conv3_1, mentor_conv3_2, mentor_conv3_3,mentee_conv4_1, mentor_conv4_1, mentor_conv4_2, mentor_conv4_3, mentee_conv5_1, mentor_conv5_1, mentor_conv5_2, mentor_conv5_3):
         normalize_a_1 = tf.nn.l2_normalize(mentee_conv1_1,0)        
         normalize_b_1 = tf.nn.l2_normalize(mentor_conv1_1,0)
@@ -220,17 +237,23 @@ class VGG16(object):
 
         return cosine1, cosine2, cosine3, cosine4, cosine5, cosine6, cosine7, cosine8, cosine9, cosine10, cosine11, cosine12, cosine13
 
-    def rmse_loss(self, mentor_conv1_2, mentee_conv1_1, mentee_conv2_1, mentor_conv2_2, mentor_conv3_1,mentee_conv3_1,mentor_conv4_3,mentee_conv4_1, mentor_conv5_2,mentee_conv5_1, logits_mentor, logits_mentee, softmax_mentor, softmax_mentee):
+    def rmse_loss(self, mentor_conv1_2, mentee_conv1_1, mentee_conv2_1, mentor_conv2_2, mentor_conv3_1,mentee_conv3_1,mentor_conv4_3,mentee_conv4_1, mentor_conv5_2,mentee_conv5_1, logits_mentor, logits_mentee, softmax_mentor, softmax_mentee, mentor_conv3_3):
 
         self.l1 = tf.sqrt(tf.reduce_mean(tf.square(tf.subtract(mentor_conv1_2, mentee_conv1_1))))
         self.l2 = tf.sqrt(tf.reduce_mean(tf.square(tf.subtract(mentor_conv2_2, mentee_conv2_1))))
         self.l3 = tf.sqrt(tf.reduce_mean(tf.square(tf.subtract(mentor_conv3_1, mentee_conv3_1))))
         self.l4 = tf.sqrt(tf.reduce_mean(tf.square(tf.subtract(mentor_conv4_3, mentee_conv4_1))))
         self.l5 = tf.sqrt(tf.reduce_mean(tf.square(tf.subtract(mentor_conv5_2, mentee_conv5_1))))
-        self.l6 = tf.sqrt(tf.reduce_mean(tf.square(tf.subtract(logits_mentor, logits_mentee))))
-        self.l7 = tf.sqrt(tf.reduce_mean(tf.square(tf.subtract(softmax_mentor, softmax_mentee))))
 
+        ## Since its MSE, I had to remove the squareroot.
+        self.l6 = (tf.reduce_mean(tf.square(tf.subtract(logits_mentor, logits_mentee))))
+        self.l7 = (tf.reduce_mean(tf.square(tf.subtract(softmax_mentor, softmax_mentee))))
+        
+        ind_max = tf.argmax(logits_mentor, axis = 1)
+        hard_logits = tf.one_hot(ind_max, FLAGS.num_classes)
+        self.l8 = (tf.reduce_mean(tf.square(tf.subtract(hard_logits, softmax_mentee))))
 
+        self.HT = tf.sqrt(tf.reduce_mean(tf.square(tf.subtract(mentor_conv3_3, mentee_conv3_1))))
 
     def calculate_loss_with_multiple_optimizers(self, train_op0, loss, train_op1, l1, train_op2, l2, train_op3, l3, train_op4, l4, train_op5, l5, train_op6, l6, feed_dict, sess):
 
@@ -295,6 +318,7 @@ class VGG16(object):
 
     def calculate_loss_with_single_optimizer(self, train_op, loss, feed_dict, sess):
         _, self.loss_value = sess.run([train_op, loss] , feed_dict=feed_dict)
+        
 
     def train_op_for_multiple_optimizers(self, lr, loss, l1, l2, l3, l4, l5, l6):
 
@@ -334,8 +358,21 @@ class VGG16(object):
         if FLAGS.single_optimizer_last_layer:
             self.train_op = tf.train.AdamOptimizer(lr).minimize(loss + l6)
 
+        #####Hard Logits
+        if FLAGS.hard_logits:
+
+            self.train_op = tf.train.AdamOptimizer(lr).minimize(self.l8)
+        
+        #####Soft Logits
         if FLAGS.single_optimizer_last_layer_with_temp_softmax:
-            self.train_op = tf.train.AdamOptimizer(lr).minimize(loss + self.l7)
+
+            self.train_op = tf.train.AdamOptimizer(lr).minimize(alpha * loss + self.l7)
+
+        
+        if FLAGS.fitnets_HT:
+            variables_for_HT = []
+            self.train_op = tf.train.AdamOptimizer(lr).minimize(self.HT, var_list = self.get_variables_for_HT(variables_for_HT))
+
 
 
     def main(self, _):
@@ -400,7 +437,12 @@ class VGG16(object):
 
                         
                     elif FLAGS.dependent_student:
-                        vgg16_mentor = Mentor(trainable = False)
+                        if FLAGS.dataset == 'cifar10' or 'mnist':
+                            print("Teacher")
+                            vgg16_mentor = Teacher(False)
+                        if FLAGS.dataset == 'caltech101':
+                            vgg16_mentor = Mentor(False)
+                        #vgg16_mentor = Mentor(trainable = False)
                         num_batches_per_epoch = FLAGS.NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN / FLAGS.batch_size
                         decay_steps = int(num_batches_per_epoch * NUM_EPOCHS_PER_DECAY)
                         vgg16_mentee = Mentee(FLAGS.num_channels)
@@ -419,18 +461,24 @@ class VGG16(object):
                         mentor_variables_to_restore = []
                         mentor_variables_to_restore = self.get_mentor_variables_to_restore(mentor_variables_to_restore)
                         loss = vgg16_mentee.loss(labels_placeholder)
-                        self.rmse_loss(mentor_conv1_2, mentee_conv1_1, mentee_conv2_1,mentor_conv2_2, mentor_conv3_1,mentee_conv3_1,mentor_conv4_3,mentee_conv4_1, mentor_conv5_2,mentee_conv5_1, logits_mentor, logits_mentee, softmax_mentor, softmax_mentee)
+                        self.rmse_loss(mentor_conv1_2, mentee_conv1_1, mentee_conv2_1,mentor_conv2_2, mentor_conv3_1,mentee_conv3_1,mentor_conv4_3,mentee_conv4_1, mentor_conv5_2,mentee_conv5_1, logits_mentor, logits_mentee, softmax_mentor, softmax_mentee, mentor_conv3_3)
                         lr = tf.train.exponential_decay(FLAGS.learning_rate,global_step, decay_steps,LEARNING_RATE_DECAY_FACTOR,staircase=True)
                         if FLAGS.single_optimizer:
                             self.train_op_for_single_optimizer(lr, loss, self.l1, self.l2, self.l3, self.l4, self.l5, self.l6)
                         if FLAGS.multiple_optimizers:
                             self.train_op_for_multiple_optimizers(lr, loss, self.l1, self.l2, self.l3, self.l4, self.l5, self.l6)
+                        
+                        
 
                         #train_op0, train_op1, train_op2, train_op3, train_op4, train_op5, train_op6 = train_op_for_multiple_optimizers(lr, loss, l1, l2, l3, l4, l5, l6)
                         init = tf.initialize_all_variables()
                         sess.run(init)
+                        if FLAGS.fitnets_KD:
+                            variables_for_KD = []
+                            saver = tf.train.Saver(self.get_variables_for_KD(variables_for_KD))
+                            saver.restore(sess, "./summary-log/new_method_dependent_student_weights_filename_cifar10")
                         saver = tf.train.Saver(mentor_variables_to_restore)
-                        saver.restore(sess, "./summary-log/new_method_teacher_weights_filename")
+                        saver.restore(sess, "./summary-log/new_method_teacher_weights_filename_cifar10")
                     eval_correct= self.evaluation(softmax, labels_placeholder)
                     count = 0
                     try:
@@ -506,6 +554,12 @@ class VGG16(object):
 
                                             elif FLAGS.student:
                                                 saver.save(sess, FLAGS.student_filename)
+                                            """                                            
+                                            elif FLAGS.dependent_student:
+                                                saver_new = tf.train.Saver()
+                                                saver_new.save(sess, FLAGS.dependent_student_filename)
+                                            """
+                                        
                                             """
                                             print sess.run(cosine1, feed_dict = feed_dict)
                                             print sess.run(cosine2, feed_dict = feed_dict)
@@ -814,7 +868,24 @@ if __name__ == '__main__':
             help = 'top-5-accuracy',
             default = False
         )
-
+        parser.add_argument(
+            '--hard_logits',
+            type = bool,
+            help = 'hard_logits',
+            default = False
+        )
+        parser.add_argument(
+            '--fitnets_HT',
+            type = bool,
+            help = 'fitnets_HT',
+            default = False
+        )
+        parser.add_argument(
+            '--fitnets_KD',
+            type = bool,
+            help = 'fitnets_KD',
+            default = False
+        )
         FLAGS, unparsed = parser.parse_known_args()
         ex = VGG16()
         tf.app.run(main=ex.main, argv = [sys.argv[0]] + unparsed)

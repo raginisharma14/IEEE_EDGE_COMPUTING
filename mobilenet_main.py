@@ -13,6 +13,7 @@ from tensorflow.contrib.learn.python.learn.datasets.mnist import read_data_sets
 from tensorflow.contrib.keras.python.keras.losses import sparse_categorical_crossentropy
 import argparse
 from tensorflow.contrib.keras.python.keras.preprocessing.image import ImageDataGenerator
+from tensorflow.contrib.keras.python.keras.layers import Reshape
 dataset_path = "./"
 tf.reset_default_graph()
 NUM_ITERATIONS = 100000
@@ -22,6 +23,7 @@ NUM_EPOCHS_PER_DECAY = 1.0
 validation_accuracy_list = []
 test_accuracy_list = []
 seed = 1234
+alpha = 0.2
 class Mobilenet(object):
 
     def load_and_preprocess_data(self):
@@ -140,9 +142,28 @@ class Mobilenet(object):
             return tf.reduce_sum(tf.cast(correct, tf.int32))
 
     def get_mentor_variables_to_restore(self, variables_to_restore):
-            variables_to_restore.append([var for var in tf.global_variables() if var.op.name.startswith("teacher")][0])
-            
-            return variables_to_restore
+           # variables_to_restore.append([var for var in tf.global_variables() if var.op.name.endswith("kernel")])
+            return ([var for var in tf.global_variables() if ( var.op.name.endswith("kernel") and var.op.name.startswith("teacher"))])
+            #return variables_to_restore
+
+    def get_variables_for_HT(self, variables_for_HT):
+        
+        variables_for_HT.append([var for var in tf.global_variables() if var.op.name=="student_conv1/kernel"][0])
+        
+        variables_for_HT.append([var for var in tf.global_variables() if var.op.name=="student_conv_dw_15/depthwise_kernel"][0])
+
+        variables_for_HT.append([var for var in tf.global_variables() if var.op.name=="student_conv_dw_16/depthwise_kernel"][0])
+
+        return variables_for_HT
+    def get_variables_for_KD(self, variables_for_KD):
+
+        variables_for_KD.append([var for var in tf.global_variables() if var.op.name=="student_conv1/kernel"][0])
+        
+        variables_for_KD.append([var for var in tf.global_variables() if var.op.name=="student_conv_dw_15/depthwise_kernel"][0])
+        
+        variables_for_KD.append([var for var in tf.global_variables() if var.op.name=="student_conv_dw_16/depthwise_kernel"][0])
+
+        return variables_for_KD
 
     def l0_weights_of_mentee(self, l0_mentee_weights):
         l0_mentee_weights.append([var for var in tf.global_variables() if var.op.name=="student_conv1/kernel"][0])
@@ -460,7 +481,7 @@ class Mobilenet(object):
         self.train_op = tf.train.AdamOptimizer(lr).minimize(loss)
 
 
-    def train_op_for_single_optimizer(self, lr, loss, l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13):
+    def train_op_for_single_optimizer(self, lr, loss, l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, data_dict_mentor, data_dict_mentee):
         if FLAGS.single_optimizer_l1:
             self.train_op = tf.train.AdamOptimizer(lr).minimize(loss + l0)
 
@@ -502,6 +523,20 @@ class Mobilenet(object):
         if FLAGS.single_optimizer_l13:
             self.train_op = tf.train.AdamOptimizer(lr).minimize(loss + l0 + l1 + l2 + l3 + l4 + l5 + l6 + l7 + l8 + l9 + l10 + l11 + l12 + l13)
 
+        if FLAGS.hard_logits:
+            logits = Reshape((FLAGS.num_classes,))(data_dict_mentor.conv20)
+            ind_max = tf.argmax(logits, axis = 1)
+            hard_logits = tf.one_hot(ind_max, FLAGS.num_classes)
+            hard_loss = tf.reduce_sum(tf.square(tf.subtract(hard_logits, data_dict_mentee.conv22)))
+            self.train_op = tf.train.AdamOptimizer(lr).minimize(hard_loss)
+        if FLAGS.soft_logits:
+            soft_loss = tf.reduce_sum(tf.square(tf.subtract(data_dict_mentor.conv22, data_dict_mentee.conv22))) 
+            self.train_op = tf.train.AdamOptimizer(lr).minimize(alpha*loss + soft_loss)
+
+        if FLAGS.fitnets_HT:
+            variables_for_HT = []
+            self.train_op = tf.train.AdamOptimizer(lr).minimize(l9, var_list = self.get_variables_for_HT(variables_for_HT))
+
     def main(self, _):
 
             with tf.Graph().as_default():
@@ -534,7 +569,7 @@ class Mobilenet(object):
                             mentor = Mentor(True, FLAGS.num_classes)
                         num_batches_per_epoch = FLAGS.NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN / FLAGS.batch_size
                         decay_steps = int(num_batches_per_epoch * NUM_EPOCHS_PER_DECAY)
-                        data_dict_mentor = mentor.build(FLAGS.teacher_alpha, images_placeholder)
+                        data_dict_mentor = mentor.build(FLAGS.teacher_alpha, images_placeholder, FLAGS.temp_softmax)
                         loss = mentor.loss(labels_placeholder)
                         lr = tf.train.exponential_decay(FLAGS.learning_rate,global_step, decay_steps,LEARNING_RATE_DECAY_FACTOR,staircase=True)
                         if FLAGS.dataset == 'caltech101':
@@ -551,7 +586,7 @@ class Mobilenet(object):
                         print("Independent student")
                         num_batches_per_epoch = FLAGS.NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN / FLAGS.batch_size
                         decay_steps = int(num_batches_per_epoch * NUM_EPOCHS_PER_DECAY)
-                        data_dict = student.build(FLAGS.student_alpha, images_placeholder)
+                        data_dict = student.build(FLAGS.student_alpha, images_placeholder, FLAGS.temp_softmax)
                         #data_dict = student.build(images_placeholder,FLAGS.student_alpha, phase_train, FLAGS.num_classes, FLAGS.num_channels, seed, True)
                         loss = student.loss(labels_placeholder)
                         lr = tf.train.exponential_decay(FLAGS.learning_rate,global_step, decay_steps,LEARNING_RATE_DECAY_FACTOR,staircase=True)
@@ -567,9 +602,9 @@ class Mobilenet(object):
                         num_batches_per_epoch = FLAGS.NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN / FLAGS.batch_size
                         decay_steps = int(num_batches_per_epoch * NUM_EPOCHS_PER_DECAY)
                         vgg16_mentee = Mentee(FLAGS.num_classes)
-                        data_dict_mentor = vgg16_mentor.build(FLAGS.teacher_alpha, images_placeholder)
+                        data_dict_mentor = vgg16_mentor.build(FLAGS.teacher_alpha, images_placeholder, FLAGS.temp_softmax)
 
-                        data_dict_mentee = vgg16_mentee.build(FLAGS.student_alpha, images_placeholder)
+                        data_dict_mentee = vgg16_mentee.build(FLAGS.student_alpha, images_placeholder, FLAGS.temp_softmax)
 
                         softmax = data_dict_mentee.conv22
                         mentor_variables_to_restore = []
@@ -580,14 +615,18 @@ class Mobilenet(object):
                         embed  =  embed.build(data_dict_mentor, data_dict_mentee)
                         lr = tf.train.exponential_decay(FLAGS.learning_rate,global_step, decay_steps,LEARNING_RATE_DECAY_FACTOR,staircase=True)
                         if FLAGS.single_optimizer:
-                            self.train_op_for_single_optimizer(lr, loss, embed.loss_embed_3, embed.loss_embed_4, embed.loss_embed_5, embed.loss_embed_6, embed.loss_embed_7, embed.loss_embed_8, embed.loss_embed_9, embed.loss_embed_10, embed.loss_embed_11, embed.loss_embed_12, embed.loss_embed_13, embed.loss_embed_14, embed.loss_embed_15, embed.loss_embed_16)
+                            self.train_op_for_single_optimizer(lr, loss, embed.loss_embed_3, embed.loss_embed_4, embed.loss_embed_5, embed.loss_embed_6, embed.loss_embed_7, embed.loss_embed_8, embed.loss_embed_9, embed.loss_embed_10, embed.loss_embed_11, embed.loss_embed_12, embed.loss_embed_13, embed.loss_embed_14, embed.loss_embed_15, embed.loss_embed_16, data_dict_mentor, data_dict_mentee)
                         if FLAGS.multiple_optimizers:
                             self.train_op_for_multiple_optimizers(lr, loss, embed.loss_embed_3, embed.loss_embed_4, embed.loss_embed_5, embed.loss_embed_6, embed.loss_embed_7, embed.loss_embed_8, embed.loss_embed_9, embed.loss_embed_10, embed.loss_embed_11, embed.loss_embed_12, embed.loss_embed_13, embed.loss_embed_14, embed.loss_embed_15, embed.loss_embed_16)
 
                         init = tf.initialize_all_variables()
                         sess.run(init)
+                        if FLAGS.fitnets_KD:
+                            variables_for_KD = []
+                            saver = tf.train.Saver(self.get_variables_for_KD(variables_for_KD))
+                            saver.restore(sess, "./summary-log/new_method_dependent_student_weights_filename_mobilenet_caltech101")
                         saver = tf.train.Saver(mentor_variables_to_restore)
-                        saver.restore(sess, "./summary-log/new_method_teacher_weights_filename_mobilenet")
+                        saver.restore(sess, "./summary-log/new_method_teacher_weights_filename_mobilenet_caltech101")
                     eval_correct= self.evaluation(softmax, labels_placeholder)
                     count = 0
                     try:
@@ -636,6 +675,12 @@ class Mobilenet(object):
 
                                     elif FLAGS.student:
                                         saver.save(sess, FLAGS.student_filename)
+                                    """
+                                    elif FLAGS.dependent_student:
+                                        saver = tf.train.Saver()
+                                        saver.save(sess, FLAGS.dependent_student_filename)
+
+                                    """
                                     """
                                     print sess.run(cosine1, feed_dict = feed_dict)
                                     print sess.run(cosine2, feed_dict = feed_dict)
@@ -723,17 +768,17 @@ if __name__ == '__main__':
         parser.add_argument(
             '--teacher_weights_filename',
             type = str,
-            default = "./summary-log/new_method_teacher_weights_filename_mobilenet"
+            default = "./summary-log/new_method_teacher_weights_filename_mobilenet_caltech101"
         )
         parser.add_argument(
             '--student_filename',
             type = str,
-            default = "./summary-log/new_method_student_weights_filename_mobilenet"
+            default = "./summary-log/new_method_student_weights_filename_mobilenet_caltech101"
         )
         parser.add_argument(
             '--dependent_student_filename',
             type = str,
-            default = "./summary-log/new_method_dependent_student_weights_filename_mobilenet"
+            default = "./summary-log/new_method_dependent_student_weights_filename_mobilenet_caltech101"
         )
 
         parser.add_argument(
@@ -1033,6 +1078,30 @@ if __name__ == '__main__':
             '--top_1_accuracy',
             type = bool,
             help = 'top-1-accuracy',
+            default = False
+        )
+        parser.add_argument(
+            '--hard_logits',
+            type = bool,
+            help = 'hard_logits',
+            default = False
+        )
+        parser.add_argument(
+            '--soft_logits',
+            type = bool,
+            help = 'soft_logits',
+            default = False
+        )
+        parser.add_argument(
+            '--fitnets_KD',
+            type = bool,
+            help = 'fitnets_KD',
+            default = False
+        )
+        parser.add_argument(
+            '--fitnets_HT',
+            type = bool,
+            help = 'fitnets_HT',
             default = False
         )
 
