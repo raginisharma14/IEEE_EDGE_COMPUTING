@@ -16,21 +16,34 @@ For a better understanding, assume the first layer of the teacher and student ne
           --learning_rate 0.0001 <br />
 
 ## Command to Execute Dependent Student:<br />
-- python main.py<br />
-      --student True<br />
+- python vgg16_main.py<br />
+      --dependent_student True<br />
       --train_dataset caltech101-train.txt <br />
       --test_dataset caltech101-test<br />
-      --validation_dataset caltech101-validation.txt<br />
-      --num_training_examples 45000<br />
-      --num_testing_examples 10000<br />
-      --num_validation_examples 5000<br />
-      --NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN 45000<br />
-      --num_classes 10<br />
+      --num_training_examples 5853<br />
+      --num_testing_examples 1829<br />
+      --NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN 5853<br />
+      --num_classes 102<br />
       --image_width 224 <br />
       --image_height 224<br />
       --batch_size 45<br />
       --learning_rate 0.005<br />
       --dataset caltech101<br />
+
+- python vgg16_main.py<br /> 
+      --dependent_student True<br />
+      --train_dataset cifar10-train.txt <br />
+      --test_dataset cifar10-test<br />
+      --num_training_examples 45000<br />
+      --num_testing_examples 10000<br />
+      --NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN 45000<br />
+      --num_classes 10<br />
+      --image_width 32 <br />
+      --image_height 32<br />
+      --batch_size 128<br />
+      --learning_rate 0.01<br />
+      --top_1_accuracy True<br />
+      --dataset cifar10<br />
 
 ## Hyperparameters </br>
 -Independent Student - batch-size 45; learning rate 0.0001
