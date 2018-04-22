@@ -4,7 +4,7 @@ import random
 from DataInput import DataInput
 from mobilenetmentee import Mentee
 from mobilenetmentor import Mentor
-from embed import Embed
+from mobilenetembed import Embed
 import os
 import pdb
 import sys
@@ -482,58 +482,58 @@ class Mobilenet(object):
 
 
     def train_op_for_single_optimizer(self, lr, loss, l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, data_dict_mentor, data_dict_mentee):
-        if FLAGS.single_optimizer_l1:
+        if FLAGS.single_optimizer_l0:
             self.train_op = tf.train.AdamOptimizer(lr).minimize(loss + l0)
 
 
         if FLAGS.single_optimizer_l1:
             self.train_op = tf.train.AdamOptimizer(lr).minimize(loss + l0 + l1)
 
-        if FLAGS.single_optimizer_l2:
+        elif FLAGS.single_optimizer_l2:
             self.train_op = tf.train.AdamOptimizer(lr).minimize(loss + l0 + l1 + l2)
 
-        if FLAGS.single_optimizer_l3:
+        elif FLAGS.single_optimizer_l3:
             self.train_op = tf.train.AdamOptimizer(lr).minimize(loss + l0 + l1 + l2 + l3)
 
-        if FLAGS.single_optimizer_l4:
+        elif FLAGS.single_optimizer_l4:
             self.train_op = tf.train.AdamOptimizer(lr).minimize(loss + l0 + l1 + l2 + l3 + l4)
 
-        if FLAGS.single_optimizer_l5:
+        elif FLAGS.single_optimizer_l5:
             self.train_op = tf.train.AdamOptimizer(lr).minimize(loss + l0 + l1 + l2 + l3 + l4 + l5)
-        if FLAGS.single_optimizer_l6:
+        elif FLAGS.single_optimizer_l6:
             self.train_op = tf.train.AdamOptimizer(lr).minimize(loss + l0 + l1 + l2 + l3 + l4 + l5 + l6)
-        if FLAGS.single_optimizer_l7:
+        elif FLAGS.single_optimizer_l7:
             self.train_op = tf.train.AdamOptimizer(lr).minimize(loss + l0 + l1 + l2 + l3 + l4 + l5 + l6 + l7)
 
-        if FLAGS.single_optimizer_l8:
+        elif FLAGS.single_optimizer_l8:
             self.train_op = tf.train.AdamOptimizer(lr).minimize(loss + l0 + l1 + l2 + l3 + l4 + l5 + l6 + l7 + l8)
 
-        if FLAGS.single_optimizer_l9:
+        elif FLAGS.single_optimizer_l9:
             self.train_op = tf.train.AdamOptimizer(lr).minimize(loss + l0 + l1 + l2 + l3 + l4 + l5 + l6 + l7 + l8 + l9)
 
-        if FLAGS.single_optimizer_l10:
+        elif FLAGS.single_optimizer_l10:
             self.train_op = tf.train.AdamOptimizer(lr).minimize(loss + l0 + l1 + l2 + l3 + l4 + l5 + l6 + l7 + l8 + l9 + l10
                     )
-        if FLAGS.single_optimizer_l11:
+        elif FLAGS.single_optimizer_l11:
             self.train_op = tf.train.AdamOptimizer(lr).minimize(loss + l0 + l1 + l2 + l3 + l4 + l5 + l6 + l7 + l8 + l9 + l10 + l11)
 
-        if FLAGS.single_optimizer_l12:
+        elif FLAGS.single_optimizer_l12:
             self.train_op = tf.train.AdamOptimizer(lr).minimize(loss + l0 + l1 + l2 + l3 + l4 + l5 + l6 + l7 + l8 + l9 + l10 + l11 + l12)
 
-        if FLAGS.single_optimizer_l13:
+        elif FLAGS.single_optimizer_l13:
             self.train_op = tf.train.AdamOptimizer(lr).minimize(loss + l0 + l1 + l2 + l3 + l4 + l5 + l6 + l7 + l8 + l9 + l10 + l11 + l12 + l13)
 
-        if FLAGS.hard_logits:
+        elif FLAGS.hard_logits:
             logits = Reshape((FLAGS.num_classes,))(data_dict_mentor.conv20)
             ind_max = tf.argmax(logits, axis = 1)
             hard_logits = tf.one_hot(ind_max, FLAGS.num_classes)
             hard_loss = tf.reduce_sum(tf.square(tf.subtract(hard_logits, data_dict_mentee.conv22)))
             self.train_op = tf.train.AdamOptimizer(lr).minimize(hard_loss)
-        if FLAGS.soft_logits:
+        elif FLAGS.soft_logits:
             soft_loss = tf.reduce_sum(tf.square(tf.subtract(data_dict_mentor.conv22, data_dict_mentee.conv22))) 
             self.train_op = tf.train.AdamOptimizer(lr).minimize(alpha*loss + soft_loss)
 
-        if FLAGS.fitnets_HT:
+        elif FLAGS.fitnets_HT:
             variables_for_HT = []
             self.train_op = tf.train.AdamOptimizer(lr).minimize(l9, var_list = self.get_variables_for_HT(variables_for_HT))
 
@@ -893,6 +893,12 @@ if __name__ == '__main__':
             type = int,
             help = 'number of channels in the initial layer if it is RGB it will 3 , if it is gray scale it will be 1',
             default = '3'
+        )
+        parser.add_argument(
+            '--single_optimizer_l0',
+            type = bool,
+            help = 'optimizer for l0',
+            default = False
         )
         parser.add_argument(
             '--single_optimizer_l1',

@@ -264,9 +264,10 @@ class Teacher(object):
 			self.fc3l = tf.nn.bias_add(tf.matmul(self.fc2, fc3w), fc3b)
 			#self.fc3l = tf.nn.relu(fc3l)
 			self.parameters += [fc3w, fc3b]
-                
+
+                self.softmax = tf.nn.softmax(self.fc3l/temp_softmax)  
             
-                return self.conv1_1, self.conv1_2, self.conv2_1, self.conv2_2,self.conv3_1, self.conv3_2, self.conv3_3, self.conv4_1, self.conv4_2, self.conv4_3, self.conv5_1, self.conv5_2, self.conv5_3, self.fc3l, tf.nn.softmax(self.fc3l/temp_softmax)
+                return self
 
 	def loss(self, labels):
 		labels = tf.to_int64(labels)

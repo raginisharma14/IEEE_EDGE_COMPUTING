@@ -5,13 +5,12 @@ import random
 import pdb
 import numpy as np
 beta = 0.0005
-VGG_MEAN = [103.939, 116.779, 123.68]
-
 class Mentor(object):
 
 	def __init__(self, trainable=True, dropout=0.5):
 		self.trainable = trainable
 		self.dropout = dropout
+                ## weights of pretrained network are loaded
                 self.data_dict = np.load("vgg16.npy").item()
                 self.parameters = []
         
@@ -26,6 +25,7 @@ class Mentor(object):
 			out = tf.nn.bias_add(conv, biases)
                         mean, var = tf.nn.moments(out, axes=[0])
                         batch_norm = (out - mean) / tf.sqrt(var + tf.Variable(1e-10))
+
 
 			self.conv1_1 = tf.nn.relu(batch_norm, name=scope)
                         #tf.nn.dropout(self.conv1_1, keep_prob=0.7)
@@ -215,7 +215,8 @@ class Mentor(object):
                         mean, var = tf.nn.moments(fc1l, axes=[0])
                         batch_norm = (fc1l - mean) / tf.sqrt(var + tf.Variable(1e-10))
 			self.fc1 = tf.nn.relu(fc1l)
-                        self.fc1 = tf.nn.dropout(self.fc1, 0.5)
+                        if train_mode == True:
+                            self.fc1 = tf.nn.dropout(self.fc1, 0.5)
 			self.parameters += [fc1w, fc1b]
 
 
@@ -227,7 +228,8 @@ class Mentor(object):
                         mean, var = tf.nn.moments(fc2l, axes=[0])
                         batch_norm = (fc2l - mean) / tf.sqrt(var + tf.Variable(1e-10))
 			self.fc2 = tf.nn.relu(fc2l)
-                        self.fc2 = tf.nn.dropout(self.fc2, 0.5)
+                        if train_mode == True:
+                            self.fc2 = tf.nn.dropout(self.fc2, 0.5)
 			self.parameters += [fc2w, fc2b]
 
 		# fc3
@@ -238,10 +240,11 @@ class Mentor(object):
 			fc3b = tf.Variable(tf.constant(1.0, shape=[num_classes], dtype=tf.float32),
 								 name='mentor_biases', trainable= self.trainable)
 			self.fc3l = tf.nn.bias_add(tf.matmul(self.fc2, fc3w), fc3b)
+                        
 			self.parameters += [fc3w, fc3b]        
 
-
-                return self.conv1_1, self.conv1_2, self.conv2_1, self.conv2_2, self.conv3_1, self.conv3_2, self.conv3_3, self.conv4_1, self.conv4_2, self.conv4_3, self.conv5_1, self.conv5_2, self.conv5_3, self.fc3l, tf.nn.softmax(self.fc3l/temp_softmax)
+                self.softmax = tf.nn.softmax(self.fc3l/temp_softmax)
+                return self
         
         def variables_for_l2(self):
             
