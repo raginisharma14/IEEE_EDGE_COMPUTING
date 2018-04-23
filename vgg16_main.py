@@ -518,31 +518,31 @@ class VGG16(object):
         #with tf.control_dependencies(update_ops):
         if FLAGS.single_optimizer_l1:
             self.train_op = tf.train.AdamOptimizer(lr).minimize(self.loss + self.l1)
-        if FLAGS.single_optimizer_l2:
+        elif FLAGS.single_optimizer_l2:
             self.train_op = tf.train.AdamOptimizer(lr).minimize(self.loss + self.l1 + self.l2)
-        if FLAGS.single_optimizer_l3:
+        elif FLAGS.single_optimizer_l3:
             self.train_op = tf.train.AdamOptimizer(lr).minimize(self.loss + self.l1 + self.l2 + self.l3)
-        if FLAGS.single_optimizer_l4:
+        elif FLAGS.single_optimizer_l4:
             self.train_op = tf.train.AdamOptimizer(lr).minimize(self.loss + self.l1 + self.l2 + self.l3 + self.l4)
-        if FLAGS.single_optimizer_l5:
+        elif FLAGS.single_optimizer_l5:
             self.train_op = tf.train.AdamOptimizer(lr).minimize(self.loss + self.l1 + self.l2 + self.l3 + self.l4 + self.l5)
-        if FLAGS.single_optimizer_l6:
+        elif FLAGS.single_optimizer_l6:
             self.train_op = tf.train.AdamOptimizer(lr).minimize(self.loss + self.l1 + self.l2 + self.l3 + self.l4 + self.l5 + self.l6)
-        if FLAGS.single_optimizer_last_layer:
+        elif FLAGS.single_optimizer_last_layer:
             self.train_op = tf.train.AdamOptimizer(lr).minimize(self.loss + self.l6)
 
         #####Hard Logits KT technique
-        if FLAGS.hard_logits:
+        elif FLAGS.hard_logits:
 
             self.train_op = tf.train.AdamOptimizer(lr).minimize(self.l8)
         
         #####Soft Logits KT technique
-        if FLAGS.single_optimizer_last_layer_with_temp_softmax:
+        elif FLAGS.single_optimizer_last_layer_with_temp_softmax:
 
             self.train_op = tf.train.AdamOptimizer(lr).minimize(alpha * self.loss + self.l7)
 
         #####Phase 1 of intermediate representations KT technique
-        if FLAGS.fitnets_HT:
+        elif FLAGS.fitnets_HT:
             variables_for_HT = []
             self.train_op = tf.train.AdamOptimizer(lr).minimize(self.HT, var_list = self.get_variables_for_HT(variables_for_HT))
 
@@ -574,7 +574,7 @@ class VGG16(object):
         init = tf.initialize_all_variables()
         sess.run(init)
         ## saver object is created to save all the variables to a file
-        saver = tf.train.Saver()
+        self.saver = tf.train.Saver()
 
     
     def train_teacher(self, images_placeholder, labels_placeholder, phase_train, global_step, sess):
@@ -600,13 +600,13 @@ class VGG16(object):
         if FLAGS.dataset == 'caltech101':
             ## restore all the weights 
             variables_to_restore = self.get_mentor_variables_to_restore()
-            self.train_op = mentor.training(loss, FLAGS.learning_rate_pretrained,lr, global_step, variables_to_restore,mentor.get_training_vars())
+            self.train_op = mentor.training(self.loss, FLAGS.learning_rate_pretrained,lr, global_step, variables_to_restore,mentor.get_training_vars())
         if FLAGS.dataset == 'cifar10':
-            self.train_op = mentor.training(loss, FLAGS.learning_rate, global_step)
+            self.train_op = mentor.training(self.loss, FLAGS.learning_rate, global_step)
         self.softmax = mentor_data_dict.softmax
         init = tf.global_variables_initializer()
         sess.run(init)
-        saver = tf.train.Saver()
+        self.saver = tf.train.Saver()
 
     def train_dependent_student(self, images_placeholder, labels_placeholder, phase_train, seed, global_step, sess):
 
@@ -636,22 +636,36 @@ class VGG16(object):
         mentor_variables_to_restore = self.get_mentor_variables_to_restore()
         self.loss = vgg16_mentee.loss(labels_placeholder)
         lr = tf.train.exponential_decay(FLAGS.learning_rate,global_step, decay_steps,LEARNING_RATE_DECAY_FACTOR,staircase=True)
-        if FLAGS.single_optimizer:
+        if FLAGS.single_optimizer and FLAGS.layers_with_same_width:
             self.rmse_loss(self.mentor_data_dict, self.mentee_data_dict)
             self.train_op_for_single_optimizer(lr)
+            init = tf.initialize_all_variables()
+            sess.run(init)
 
-        if FLAGS.layers_with_same_width:
+        elif FLAGS.single_optimizer and FLAGS.layers_with_different_widths:
+            embed = Embed()
+            embed_data_dict  = embed.build(self.mentor_data_dict, self.mentee_data_dict, FLAGS.embed_type)
+            self.loss_with_different_layer_widths(embed_data_dict, self.mentor_data_dict, self.mentee_data_dict)
+            self.train_op_for_single_optimizer(lr)
+            init = tf.initialize_all_variables()
+            sess.run(init)
+
+        elif FLAGS.multiple_optimizers and FLAGS.layers_with_same_width:
             self.rmse_loss(self.mentor_data_dict, self.mentee_data_dict)
             self.train_op_for_multiple_optimizers(lr)
+            init = tf.initialize_all_variables()
+            sess.run(init)
 
-        if FLAGS.layers_with_different_widths:
+        elif FLAGS.multiple_optimizers and FLAGS.layers_with_different_widths:
             embed = Embed()
             embed_data_dict  = embed.build(self.mentor_data_dict, self.mentee_data_dict, FLAGS.embed_type)
             self.loss_with_different_layer_widths(embed_data_dict, self.mentor_data_dict, self.mentee_data_dict)
             self.train_op_for_multiple_optimizers(lr)
             init = tf.initialize_all_variables()
             sess.run(init)
-        if FLAGS.fitnets_KD:
+        elif FLAGS.fitnets_KD:
+            init = tf.initialize_all_variables()
+            sess.run(init)
             variables_for_KD = []
             saver = tf.train.Saver(self.get_variables_for_KD(variables_for_KD))
             saver.restore(sess, "./summary-log/new_method_dependent_student_weights_filename_cifar10")
@@ -737,7 +751,7 @@ class VGG16(object):
                                             
                     checkpoint_file = os.path.join(SUMMARY_LOG_DIR, 'model.ckpt')
                     if FLAGS.teacher:
-                        saver.save(sess, FLAGS.teacher_weights_filename)
+                        self.saver.save(sess, FLAGS.teacher_weights_filename)
                     """
                     elif FLAGS.student:
                         saver.save(sess, FLAGS.student_filename)
@@ -856,7 +870,7 @@ if __name__ == '__main__':
         parser.add_argument(
             '--teacher_weights_filename',
             type = str,
-            default = "./summary-log/new_method_teacher_weights_filename_cifar10"
+            default = "./summary-log/new_method_teacher_weights_filename_caltech101_clean_code"
         )
         parser.add_argument(
             '--student_filename',
@@ -908,7 +922,7 @@ if __name__ == '__main__':
         parser.add_argument(
             '--temp_softmax',
             type = int,
-            default = 5                                   
+            default = 1                                   
         )
         parser.add_argument(
             '--num_classes',

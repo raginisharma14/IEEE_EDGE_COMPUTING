@@ -12,7 +12,24 @@ class Mentee(object):
 		self.trainable = trainable
 		self.parameters = []
                 self.num_channels = num_channels
-                
+        
+        
+        """
+            This function is not being used currently; if we need regularization we call it.
+            as mentioned below.
+        """
+
+        def extra_regularization(self, out):
+            out = tf.contrib.layers.batch_norm(out,  decay=0.999,
+                                    center=True,
+                                    scale=False,
+                                    updates_collections= None, is_training= train_mode)
+            mean, var = tf.nn.moments(out, axes=[0])
+            out = tf.nn.batch_normalization(out, mean, var)
+            out = (out - mean) / tf.sqrt(var + tf.constant(1e-10))
+
+            return out
+
 
 	def build(self, rgb, num_classes, temp_softmax, seed,train_mode):
                 
@@ -25,15 +42,10 @@ class Mentee(object):
 			biases = tf.Variable(tf.constant(0.0, shape=[64], dtype=tf.float32),
 								 trainable= self.trainable, name='mentee_biases')
 			out = tf.nn.bias_add(conv, biases)
-                        out = tf.contrib.layers.batch_norm(out,  decay=0.999,
-                                    center=True,
-                                        scale=False,
-                                        updates_collections= None, is_training= train_mode)
- #                       mean, var = tf.nn.moments(out, axes=[0])
-                        #out = tf.nn.batch_normalization(out, mean, var)
-                        #out = (out - mean) / tf.sqrt(var + tf.constant(1e-10))
+                        #out = self.extra_regularization(out)
+
 			self.conv1_1 = tf.nn.relu(out, name=scope)
-                        self.conv1_1 = BatchNormalization(axis = -1, name= 'mentee_bn_conv1_1')(self.conv1_1)
+                        #self.conv1_1 = BatchNormalization(axis = -1, name= 'mentee_bn_conv1_1')(self.conv1_1)
 			self.parameters += [kernel, biases]
 			
 		self.pool1 = tf.nn.max_pool(self.conv1_1,
@@ -49,15 +61,8 @@ class Mentee(object):
 			biases = tf.Variable(tf.constant(0.0, shape=[128], dtype=tf.float32),
 								trainable= self.trainable, name='mentee_biases')
 			out = tf.nn.bias_add(conv, biases)
-                        #out = tf.contrib.layers.batch_norm(out,  decay=0.999,
-                        #            center=True,
-                         #               scale=False,
-                          #              updates_collections= None, is_training= train_mode)
-   #                     mean, var = tf.nn.moments(out, axes=[0])
-                        #out = (out - mean) / tf.sqrt(var + tf.constant(1e-10))
-                        #out = tf.nn.batch_normalization(out, mean, var)
 			self.conv2_1 = tf.nn.relu(out, name=scope)
-                        self.conv2_1 = BatchNormalization(axis = -1, name= 'mentee_bn_conv2_1')(self.conv2_1)
+                        #self.conv2_1 = BatchNormalization(axis = -1, name= 'mentee_bn_conv2_1')(self.conv2_1)
 			self.parameters += [kernel, biases]
 
 		self.pool2 = tf.nn.max_pool(self.conv2_1,
@@ -72,15 +77,8 @@ class Mentee(object):
 			biases = tf.Variable(tf.constant(0.0, shape=[256], dtype=tf.float32),
 								trainable= self.trainable, name='mentee_biases')
 			out = tf.nn.bias_add(conv, biases)
-                        #out = tf.contrib.layers.batch_norm(out,  decay=0.999,
-                        #            center=True,
-                         #               scale=False,
-                          #              updates_collections= None, is_training= train_mode)
-     #                   mean, var = tf.nn.moments(out, axes=[0])
-                        #out = tf.nn.batch_normalization(out, mean, var)
-                        #out = (out - mean) / tf.sqrt(var + tf.constant(1e-10))
 			self.conv3_1 = tf.nn.relu(out, name=scope)
-                        self.conv3_1 = BatchNormalization(axis = -1, name= 'mentee_bn_conv3_1')(self.conv3_1)
+                        #self.conv3_1 = BatchNormalization(axis = -1, name= 'mentee_bn_conv3_1')(self.conv3_1)
 			self.parameters += [kernel, biases]
 
 		self.pool3 = tf.nn.max_pool(self.conv3_1,
@@ -96,15 +94,8 @@ class Mentee(object):
 			biases = tf.Variable(tf.constant(0.0, shape=[512], dtype=tf.float32),
 								trainable=self.trainable, name='mentee_biases')
 			out = tf.nn.bias_add(conv, biases)
-                        #out = tf.contrib.layers.batch_norm(out,  decay=0.999,
-                        #            center=True,
-                         #               scale=False,
-                          #              updates_collections= None, is_training= train_mode)
-               #         mean, var = tf.nn.moments(out, axes=[0])
-                        #out = tf.nn.batch_normalization(out, mean, var)
-                        #out = (out - mean) / tf.sqrt(var + tf.constant(1e-10))
 			self.conv4_1 = tf.nn.relu(out, name=scope)
-                        self.conv4_1 = BatchNormalization(axis = -1, name= 'mentee_bn_conv4_1')(self.conv4_1)
+                        #self.conv4_1 = BatchNormalization(axis = -1, name= 'mentee_bn_conv4_1')(self.conv4_1)
 			self.parameters += [kernel, biases]
 
 		self.pool4 = tf.nn.max_pool(self.conv4_1,
@@ -119,15 +110,8 @@ class Mentee(object):
 			biases = tf.Variable(tf.constant(0.0, shape=[512], dtype=tf.float32),
 								trainable=self.trainable, name='mentee_biases')
 			out = tf.nn.bias_add(conv, biases)
-                        #out = tf.contrib.layers.batch_norm(out,  decay=0.999,
-                        #            center=True,
-                         #               scale=False,
-                          #              updates_collections= None, is_training= train_mode)
-                    #    mean, var = tf.nn.moments(out, axes=[0])
-                        #out = tf.nn.batch_normalization(out, mean, var)
-                        #out = (out - mean) / tf.sqrt(var + tf.constant(1e-10))
 			self.conv5_1 = tf.nn.relu(out, name=scope)
-                        self.conv5_1 = BatchNormalization(axis = -1, name= 'mentee_bn_conv5_1')(self.conv5_1)
+                        #self.conv5_1 = BatchNormalization(axis = -1, name= 'mentee_bn_conv5_1')(self.conv5_1)
 			self.parameters += [kernel, biases]
 		
                 self.pool5 = tf.nn.max_pool(self.conv5_1,
@@ -142,15 +126,8 @@ class Mentee(object):
 			biases = tf.Variable(tf.constant(0.0, shape=[512], dtype=tf.float32),
 								trainable=self.trainable, name='mentee_biases')
 			out = tf.nn.bias_add(conv, biases)
-                        #out = tf.contrib.layers.batch_norm(out,  decay=0.999,
-                         #           center=True,
-                          #              scale=False,
-                           #             updates_collections= None, is_training= train_mode)
-                        #mean, var = tf.nn.moments(out, axes=[0])
-                        #out = tf.nn.batch_normalization(out, mean, var)
-                        #out = (out - mean) / tf.sqrt(var + tf.constant(1e-10))
 			self.conv6_1 = tf.nn.relu(out, name=scope)
-                        self.conv6_1 = BatchNormalization(axis = -1, name= 'mentee_bn_conv6_1')(self.conv6_1)
+                        #self.conv6_1 = BatchNormalization(axis = -1, name= 'mentee_bn_conv6_1')(self.conv6_1)
 			self.parameters += [kernel, biases]
 		
                 self.pool6 = tf.nn.max_pool(self.conv6_1,
@@ -168,17 +145,11 @@ class Mentee(object):
 								 trainable=self.trainable, name='mentee_biases')
 			pool6_flat = tf.reshape(self.pool6, [-1, shape])
 			fc1l = tf.nn.bias_add(tf.matmul(pool6_flat, fc1w), fc1b)
-                        #fc1l = tf.contrib.layers.batch_norm(fc1l,  decay=0.999,
-                         #           center=True,
-                          #              scale=False,
-                           #             updates_collections= None,is_training= train_mode)
-                        #mean, var = tf.nn.moments(fc1l, axes=[0])
-                        #fc1l = (fc1l - mean) / tf.sqrt(var + tf.constant(1e-10))
 			self.fc1 = tf.nn.relu(fc1l)
-                        self.fc1 = BatchNormalization(axis = -1, name= 'mentee_bn_fc1')(self.fc1)
-  #                      if train_mode == True:
-   #                         print("Traine_mode is true")
-    #                        self.fc1 = tf.nn.dropout(self.fc1, 0.5, seed = seed)
+                        #self.fc1 = BatchNormalization(axis = -1, name= 'mentee_bn_fc1')(self.fc1)
+                        #if train_mode == True:
+                            #print("Traine_mode is true")
+                            #self.fc1 = tf.nn.dropout(self.fc1, 0.5, seed = seed)
 			self.parameters += [fc1w, fc1b]
 		
                 with tf.name_scope('mentee_fc2') as scope:
@@ -187,15 +158,13 @@ class Mentee(object):
 			fc2b = tf.Variable(tf.constant(0.0, shape=[4096], dtype=tf.float32),
 								 trainable=self.trainable, name='mentee_biases')
 			fc2l = tf.nn.bias_add(tf.matmul(self.fc1, fc2w), fc2b)
-                        #mean, var = tf.nn.moments(fc2l, axes=[0])
-                        #fc2l = tf.contrib.layers.batch_norm(fc2l,  decay=0.999,
-                         #           center=True,
-                          #              scale=False,
-                           #             updates_collections= None, is_training= train_mode)
-                        #fc2l = tf.nn.batch_normalization(out, mean, var)
-                        #fc2l = (fc2l - mean) / tf.sqrt(var + tf.constant(1e-10))
 			self.fc2 = tf.nn.relu(fc2l)
-                        self.fc2 = BatchNormalization(axis = -1, name= 'mentee_bn_fc2')(self.fc2)
+                        #self.fc2 = BatchNormalization(axis = -1, name= 'mentee_bn_fc2')(self.fc2)
+
+                        """
+                            Dropout and BatchNormalization are added to regularize the network and perform better by generalizing well.
+                            However, to demonstrate knowledge transfer effectiveness, no other regularizers are added.
+                        """
                         if train_mode == True:
                             self.fc2 = tf.nn.dropout(self.fc2, 0.5, seed = seed)
 			self.parameters += [fc2w, fc2b]
