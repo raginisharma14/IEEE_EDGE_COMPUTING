@@ -5,7 +5,7 @@ import random
 import math
 import numpy as np
 import pdb
-EMBED_UNITS = 64
+EMBED_UNITS = 128
 
 class Embed(object):
 

@@ -5,6 +5,11 @@ import random
 import pdb
 import numpy as np
 beta = 0.0005
+
+"""
+Removed all kinds of regularizers such as dropout and batch normalization
+
+"""
 class Mentor(object):
 
 	def __init__(self, trainable=True, dropout=0.5):
@@ -215,8 +220,8 @@ class Mentor(object):
                         mean, var = tf.nn.moments(fc1l, axes=[0])
                         batch_norm = (fc1l - mean) / tf.sqrt(var + tf.Variable(1e-10))
 			self.fc1 = tf.nn.relu(fc1l)
-                        if train_mode == True:
-                            self.fc1 = tf.nn.dropout(self.fc1, 0.5)
+                        #if train_mode == True:
+                        #self.fc1 = tf.nn.dropout(self.fc1, 0.5)
 			self.parameters += [fc1w, fc1b]
 
 
@@ -228,8 +233,8 @@ class Mentor(object):
                         mean, var = tf.nn.moments(fc2l, axes=[0])
                         batch_norm = (fc2l - mean) / tf.sqrt(var + tf.Variable(1e-10))
 			self.fc2 = tf.nn.relu(fc2l)
-                        if train_mode == True:
-                            self.fc2 = tf.nn.dropout(self.fc2, 0.5)
+                        #if train_mode == True:
+                        #self.fc2 = tf.nn.dropout(self.fc2, 0.5)
 			self.parameters += [fc2w, fc2b]
 
 		# fc3

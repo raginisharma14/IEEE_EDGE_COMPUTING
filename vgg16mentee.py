@@ -6,6 +6,10 @@ import pdb
 import numpy as np
 from tensorflow.contrib.keras.python.keras.layers import BatchNormalization
 from tensorflow.contrib.keras.python.keras import backend as K
+"""
+Removed all kinds of regularizers such as dropout and batch_normalization
+
+"""
 class Mentee(object):
 
 	def __init__(self, num_channels, trainable=True):
@@ -148,8 +152,8 @@ class Mentee(object):
 			self.fc1 = tf.nn.relu(fc1l)
                         #self.fc1 = BatchNormalization(axis = -1, name= 'mentee_bn_fc1')(self.fc1)
                         #if train_mode == True:
-                            #print("Traine_mode is true")
-                            #self.fc1 = tf.nn.dropout(self.fc1, 0.5, seed = seed)
+                        print("Traine_mode is true")
+                        #self.fc1 = tf.nn.dropout(self.fc1, 0.5, seed = seed)
 			self.parameters += [fc1w, fc1b]
 		
                 with tf.name_scope('mentee_fc2') as scope:
@@ -165,8 +169,8 @@ class Mentee(object):
                             Dropout and BatchNormalization are added to regularize the network and perform better by generalizing well.
                             However, to demonstrate knowledge transfer effectiveness, no other regularizers are added.
                         """
-                        if train_mode == True:
-                            self.fc2 = tf.nn.dropout(self.fc2, 0.5, seed = seed)
+                        #if train_mode == True:
+                        #self.fc2 = tf.nn.dropout(self.fc2, 0.5, seed = seed)
 			self.parameters += [fc2w, fc2b]
                 
                 with tf.name_scope('mentee_fc3') as scope:
