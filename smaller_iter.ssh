@@ -1,0 +1,2 @@
+#!/bin/sh
+python vgg16_main.py  --dependent_student True --batch_size 25 --dataset caltech101 --top_1_accuracy True --multiple_optimizers True --multiple_optimizers_l6 True --layers_with_same_width True --num_iterations 20
